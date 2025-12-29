@@ -1,0 +1,31 @@
+{# Extiende la plantilla base que contiene la estructura principal del sitio web #}
+{% extends "base.html" %}
+
+{# Bloque de contenido principal que se insertará en el layout base #}
+{% block content %}
+
+<h2>Restablecer Contraseña</h2>
+
+{# Formulario para que el usuario ingrese su correo y una nueva contraseña. 
+   Este formulario envía un POST al backend usando el token como parámetro de URL #}
+<form method="POST" action="{{ url_for('restablecer_contraseña', token=token) }}">
+
+  {# Campo de entrada para el correo electrónico del usuario #}
+  <div class="mb-3">
+    <label for="email">Correo electrónico:</label>
+    <input type="email" name="email" id="email" class="form-control" placeholder="Tu correo" required>
+  </div>
+
+  {# Campo de entrada para la nueva contraseña que el usuario desea establecer #}
+  <div class="mb-3">
+    <label for="password">Nueva contraseña:</label>
+    <input type="password" name="password" id="password" class="form-control" placeholder="Nueva contraseña" required>
+  </div>
+
+  {# Botón para enviar el formulario y activar el proceso de actualización de contraseña #}
+  <button type="submit" class="btn btn-success">Restablecer</button>
+
+</form>
+
+{# Fin del bloque de contenido #}
+{% endblock %}

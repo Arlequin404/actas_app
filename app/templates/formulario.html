@@ -1,0 +1,30 @@
+{# Extiende la plantilla base para usar su estructura general (menú, cabecera, etc.) #}
+{% extends "base.html" %}
+
+{# Inicia el bloque de contenido específico de esta vista #}
+{% block content %}
+
+  {# Título dinámico que muestra el tipo de documento, por ejemplo: Acta, Informe o Reporte #}
+  <h2>{{ tipo }}</h2>
+
+  {# Formulario de registro/edición del documento. Usa método POST para enviar los datos al servidor #}
+  <form method="post" class="mt-4">
+
+    {# Campo de entrada para el asunto del documento #}
+    <div class="mb-3">
+      <label for="asunto" class="form-label">Asunto</label>
+      <input type="text" class="form-control" id="asunto" name="asunto" required value="{{ asunto or '' }}">
+    </div>
+
+    {# Campo de texto para ingresar observaciones adicionales #}
+    <div class="mb-3">
+      <label for="observaciones" class="form-label">Observaciones</label>
+      <textarea class="form-control" id="observaciones" name="observaciones" rows="4">{{ observaciones or '' }}</textarea>
+    </div>
+
+    {# Botón para enviar el formulario y guardar el documento #}
+    <button type="submit" class="btn btn-primary">Guardar</button>
+  </form>
+
+{# Cierra el bloque de contenido #}
+{% endblock %}

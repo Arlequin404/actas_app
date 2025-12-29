@@ -1,0 +1,119 @@
+{# Hereda el diseño base desde "base.html" (menú, estilos, scripts comunes) #}
+{% extends "base.html" %}
+
+{# Inicia el bloque de contenido principal de la plantilla #}
+{% block content %}
+
+<h2>Documentos Registrados</h2>
+
+{# Navegación por pestañas para dividir actas, informes y reportes #}
+<ul class="nav nav-tabs" id="tabDocs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="actas-tab" data-bs-toggle="tab" data-bs-target="#actas" type="button" role="tab">Actas</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="informes-tab" data-bs-toggle="tab" data-bs-target="#informes" type="button" role="tab">Informes</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="reportes-tab" data-bs-toggle="tab" data-bs-target="#reportes" type="button" role="tab">Reportes</button>
+  </li>
+</ul>
+
+{# Contenedor de contenido de pestañas, con separación superior #}
+<div class="tab-content mt-3" id="tabDocsContent">
+
+  {# ----------- TABLA DE ACTAS ----------- #}
+  <div class="tab-pane fade show active" id="actas" role="tabpanel">
+    {# Botón para exportar a Excel #}
+    <a href="/exportar_documentos/actas" class="btn btn-success btn-sm mb-2">📥 Exportar Actas a Excel</a>
+
+    {# Tabla con los datos de las actas #}
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Asunto</th>
+          <th>Observaciones</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Funcionario</th>
+        </tr>
+      </thead>
+      <tbody>
+        {# Itera sobre la lista de actas enviada desde Flask #}
+        {% for a in actas %}
+        <tr>
+          <td>{{ a[0] }}</td>
+          <td>{{ a[1] }}</td>
+          <td>{{ a[2] }}</td>
+          <td>{{ a[3] }}</td>
+          <td>{{ a[4] }}</td>
+          <td>{{ a[5] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ----------- TABLA DE INFORMES ----------- #}
+  <div class="tab-pane fade" id="informes" role="tabpanel">
+    <a href="/exportar_documentos/informes" class="btn btn-success btn-sm mb-2">📥 Exportar Informes a Excel</a>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Asunto</th>
+          <th>Observaciones</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Funcionario</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in informes %}
+        <tr>
+          <td>{{ i[0] }}</td>
+          <td>{{ i[1] }}</td>
+          <td>{{ i[2] }}</td>
+          <td>{{ i[3] }}</td>
+          <td>{{ i[4] }}</td>
+          <td>{{ i[5] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ----------- TABLA DE REPORTES ----------- #}
+  <div class="tab-pane fade" id="reportes" role="tabpanel">
+    <a href="/exportar_documentos/reportes" class="btn btn-success btn-sm mb-2">📥 Exportar Reportes a Excel</a>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Asunto</th>
+          <th>Observaciones</th>
+          <th>Fecha</th>
+          <th>Hora</th>
+          <th>Funcionario</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reportes %}
+        <tr>
+          <td>{{ r[0] }}</td>
+          <td>{{ r[1] }}</td>
+          <td>{{ r[2] }}</td>
+          <td>{{ r[3] }}</td>
+          <td>{{ r[4] }}</td>
+          <td>{{ r[5] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{# Finaliza el bloque de contenido #}
+{% endblock %}

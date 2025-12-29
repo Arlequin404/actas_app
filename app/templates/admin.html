@@ -1,0 +1,44 @@
+{# 
+  Plantilla para la vista de administración de usuarios.
+  Permite al administrador visualizar, crear, editar y eliminar usuarios del sistema.
+#}
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Administración de usuarios</h2>
+
+{# Botón para redirigir al formulario de creación de un nuevo usuario #}
+<a href="/admin/usuarios/crear" class="btn btn-success mb-3">➕ Crear nuevo usuario</a>
+
+{# Tabla con la lista de usuarios registrados #}
+<table class="table table-bordered table-hover">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th>         {# Identificador único del usuario #}
+      <th>Nombre</th>     {# Nombre del usuario #}
+      <th>Email</th>      {# Correo electrónico del usuario #}
+      <th>Rol</th>        {# Rol del usuario (admin o usuario) #}
+      <th>Acciones</th>   {# Botones para editar o eliminar #}
+    </tr>
+  </thead>
+  <tbody>
+    {# Iteración sobre la lista de usuarios obtenida desde el backend #}
+    {% for u in usuarios %}
+      <tr>
+        <td>{{ u[0] }}</td>  {# ID #}
+        <td>{{ u[1] }}</td>  {# Nombre #}
+        <td>{{ u[2] }}</td>  {# Email #}
+        <td>{{ u[3] }}</td>  {# Rol #}
+        <td>
+          {# Botón para editar el usuario seleccionado #}
+          <a href="/admin/usuarios/editar/{{ u[0] }}" class="btn btn-sm btn-warning">Editar</a>
+          
+          {# Botón para eliminar el usuario con confirmación previa #}
+          <a href="/admin/usuarios/eliminar/{{ u[0] }}" class="btn btn-sm btn-danger"
+             onclick="return confirm('¿Estás seguro de eliminar este usuario?');">Eliminar</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,23 @@
+{# Extiende la plantilla base que contiene el diseño general (navbar, scripts, estilos, etc.) #}
+{% extends "base.html" %}
+
+{# Inicia el bloque de contenido principal que se insertará en base.html #}
+{% block content %}
+
+<h2>Recuperar Contraseña</h2>
+
+{# Formulario para solicitar recuperación de contraseña mediante correo electrónico #}
+<form method="POST" action="{{ url_for('enviar_recuperacion') }}">
+  
+  {# Campo de entrada de correo electrónico del usuario #}
+  <div class="mb-3">
+    <label for="email">Correo electrónico:</label>
+    <input type="email" name="email" id="email" class="form-control" placeholder="Ingresa tu correo" required>
+  </div>
+
+  {# Botón para enviar la solicitud al backend y recibir el enlace de recuperación #}
+  <button type="submit" class="btn btn-primary">Enviar enlace de recuperación</button>
+</form>
+
+{# Finaliza el bloque de contenido principal #}
+{% endblock %}

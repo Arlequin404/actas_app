@@ -1,0 +1,14 @@
+{# Esta plantilla extiende la estructura general definida en base.html #}
+{% extends "base.html" %}
+
+{# Define el bloque 'content' que será insertado en el bloque correspondiente de base.html #}
+{% block content %}
+
+  {# Encabezado de bienvenida que muestra el nombre del usuario desde la sesión #}
+  <h2>Bienvenido, {{ nombre }}</h2>
+
+  {# Mensaje informativo debajo del título #}
+  <p>Seleccione una opción del menú.</p>
+
+{# Cierre del bloque de contenido #}
+{% endblock %}

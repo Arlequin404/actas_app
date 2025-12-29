@@ -1,0 +1,116 @@
+{# 
+  Esta plantilla extiende el diseño base y muestra la interfaz de administración 
+  con pestañas para visualizar, crear, exportar, editar y eliminar documentos tipo:
+  Actas, Informes y Reportes.
+#}
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Administración de Documentos</h2>
+
+{# Navegación por pestañas utilizando Bootstrap #}
+<ul class="nav nav-tabs" id="adminTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="actas-tab" data-bs-toggle="tab" data-bs-target="#actas" type="button" role="tab">Actas</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="informes-tab" data-bs-toggle="tab" data-bs-target="#informes" type="button" role="tab">Informes</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="reportes-tab" data-bs-toggle="tab" data-bs-target="#reportes" type="button" role="tab">Reportes</button>
+  </li>
+</ul>
+
+<div class="tab-content mt-3" id="adminTabsContent">
+
+  <!-- Sección ACTAS -->
+  <div class="tab-pane fade show active" id="actas" role="tabpanel">
+    {# Botón para crear nueva acta #}
+    <a href="/crear/actas" class="btn btn-success btn-sm mb-2">➕ Crear nueva acta</a>
+    {# Botón para exportar actas a Excel #}
+    <a href="/exportar_documentos/actas" class="btn btn-primary btn-sm mb-2 ms-2">📥 Exportar Actas a Excel</a>
+    
+    {# Tabla de visualización de actas #}
+    <table class="table table-bordered table-hover">
+      <thead class="table-dark">
+        <tr><th>ID</th><th>Asunto</th><th>Fecha</th><th>Hora</th><th>Funcionario</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {# Iterar sobre las actas enviadas desde el backend #}
+        {% for a in actas %}
+          <tr>
+            <td>{{ a[0] }}</td>  {# ID #}
+            <td>{{ a[1] }}</td>  {# Asunto #}
+            <td>{{ a[2] }}</td>  {# Fecha #}
+            <td>{{ a[3] }}</td>  {# Hora #}
+            <td>{{ a[4] }}</td>  {# Funcionario #}
+            <td>
+              {# Botón para editar acta #}
+              <a href="/editar/actas/{{ a[0] }}" class="btn btn-sm btn-warning">Editar</a>
+              {# Botón para eliminar acta con confirmación #}
+              <a href="/eliminar/actas/{{ a[0] }}" class="btn btn-sm btn-danger"
+                 onclick="return confirm('¿Eliminar esta acta?');">Eliminar</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sección INFORMES -->
+  <div class="tab-pane fade" id="informes" role="tabpanel">
+    <a href="/crear/informes" class="btn btn-success btn-sm mb-2">➕ Crear nuevo informe</a>
+    <a href="/exportar_documentos/informes" class="btn btn-primary btn-sm mb-2 ms-2">📥 Exportar Informes a Excel</a>
+    <table class="table table-bordered table-hover">
+      <thead class="table-dark">
+        <tr><th>ID</th><th>Asunto</th><th>Fecha</th><th>Hora</th><th>Funcionario</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for i in informes %}
+          <tr>
+            <td>{{ i[0] }}</td>
+            <td>{{ i[1] }}</td>
+            <td>{{ i[2] }}</td>
+            <td>{{ i[3] }}</td>
+            <td>{{ i[4] }}</td>
+            <td>
+              <a href="/editar/informes/{{ i[0] }}" class="btn btn-sm btn-warning">Editar</a>
+              <a href="/eliminar/informes/{{ i[0] }}" class="btn btn-sm btn-danger"
+                 onclick="return confirm('¿Eliminar este informe?');">Eliminar</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sección REPORTES -->
+  <div class="tab-pane fade" id="reportes" role="tabpanel">
+    <a href="/crear/reportes" class="btn btn-success btn-sm mb-2">➕ Crear nuevo reporte</a>
+    <a href="/exportar_documentos/reportes" class="btn btn-primary btn-sm mb-2 ms-2">📥 Exportar Reportes a Excel</a>
+    <table class="table table-bordered table-hover">
+      <thead class="table-dark">
+        <tr><th>ID</th><th>Asunto</th><th>Fecha</th><th>Hora</th><th>Funcionario</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for r in reportes %}
+          <tr>
+            <td>{{ r[0] }}</td>
+            <td>{{ r[1] }}</td>
+            <td>{{ r[2] }}</td>
+            <td>{{ r[3] }}</td>
+            <td>{{ r[4] }}</td>
+            <td>
+              <a href="/editar/reportes/{{ r[0] }}" class="btn btn-sm btn-warning">Editar</a>
+              <a href="/eliminar/reportes/{{ r[0] }}" class="btn btn-sm btn-danger"
+                 onclick="return confirm('¿Eliminar este reporte?');">Eliminar</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}

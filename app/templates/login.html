@@ -1,0 +1,42 @@
+{# Hereda la estructura general desde la plantilla base.html (barra de navegación, estilos, etc.) #}
+{% extends "base.html" %}
+
+{# Inicio del bloque de contenido principal de la página #}
+{% block content %}
+
+  {# Contenedor centrado en la pantalla con un ancho máximo de 6 columnas (en pantallas medianas en adelante) #}
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+
+      {# Título principal del formulario centrado #}
+      <h2 class="mb-4 text-center">Iniciar sesión</h2>
+
+      {# Formulario de inicio de sesión que envía los datos por método POST a la ruta /login #}
+      <form method="post" action="/login">
+
+        {# Campo de entrada para el correo electrónico del usuario #}
+        <div class="mb-3">
+          <label for="email" class="form-label">Correo electrónico</label>
+          <input type="email" class="form-control" id="email" name="email" required placeholder="nombre@ejemplo.com">
+        </div>
+
+        {# Campo de entrada para la contraseña del usuario #}
+        <div class="mb-3">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+        </div>
+
+        {# Botón para enviar el formulario de login. Ocupa todo el ancho disponible #}
+        <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+      </form>
+
+      {# Enlace para recuperar contraseña. Apunta a la ruta Flask llamada recuperar_contraseña #}
+      <div class="text-center mt-3">
+        <a href="{{ url_for('recuperar_contraseña') }}">¿Olvidaste tu contraseña?</a>
+      </div>
+
+    </div>
+  </div>
+
+{# Fin del bloque de contenido #}
+{% endblock %}
