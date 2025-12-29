@@ -15,10 +15,10 @@ from io import BytesIO
 from datetime import datetime
 import pandas as pd
 
+app = Flask(__name__)
 
 app.debug = False
-import logging
-logging.basicConfig(level=logging.INFO)
+
 
 
 # ===============================
