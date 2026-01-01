@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <title>Actas App</title>
 
-  {# Inclusión de Bootstrap para estilos y componentes #}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
 
   <style>
-    /* Estilos personalizados para el toast (notificación emergente inferior) */
     .toast-bottom {
       position: fixed;
       bottom: 10px;
@@ -22,15 +20,10 @@
       max-width: 600px;
       z-index: 1050;
       box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      font-family: sans-serif;
-    }
-    .toast-bottom p, .toast-bottom h5 {
-      margin: 5px 0;
     }
   </style>
 
   <script>
-    // Oculta automáticamente el toast después de 10 segundos
     window.onload = function () {
       const toast = document.querySelector('.toast-bottom');
       if (toast) {
@@ -39,59 +32,53 @@
     };
   </script>
 </head>
+
 <body>
 
-  {# Barra de navegación superior #}
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
-    <a class="navbar-brand text-white" href="/dashboard">Inicio</a>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+  <a class="navbar-brand text-white" href="/dashboard">Inicio</a>
 
-    <div class="navbar-nav me-auto">
-      {# Opciones para usuarios regulares #}
-      {% if session.get('rol') == 'usuario' %}
-        <a class="nav-link text-white" href="/crear/actas">Crear Actas</a>
-        <a class="nav-link text-white" href="/crear/informes">Crear Informes</a>
-        <a class="nav-link text-white" href="/crear/reportes">Crear Reportes</a>
-        <a class="nav-link text-white" href="/mis_documentos">Mis Documentos</a>
-      {% endif %}
+  <div class="navbar-nav me-auto">
+    {% if session.get('rol') == 'usuario' %}
+      <a class="nav-link text-white" href="/crear/actas">Crear Actas</a>
+      <a class="nav-link text-white" href="/crear/informes">Crear Informes</a>
+      <a class="nav-link text-white" href="/crear/reportes">Crear Reportes</a>
+      <a class="nav-link text-white" href="/crear/comisiones">Crear Comisiones</a>
+      <a class="nav-link text-white" href="/mis_documentos">Mis Documentos</a>
+    {% endif %}
 
-      {# Opciones para administradores #}
-      {% if session.get('rol') == 'admin' %}
-        <a class="nav-link text-white" href="/admin">Administrar Usuarios</a>
-        <a class="nav-link text-white" href="/admin/documentos">Administrar Documentos</a>
-      {% endif %}
-    </div>
-
-    {# Área de usuario y botón de cerrar sesión #}
-    <div class="d-flex align-items-center">
-      {% if session.get('nombre') %}
-        <span class="text-white me-3">👤 {{ session['nombre'] }}</span>
-      {% endif %}
-      <a class="btn btn-outline-light btn-sm" href="/logout">Cerrar sesión</a>
-    </div>
-  </nav>
-
-  {# Contenedor principal del contenido dinámico #}
-  <div class="container mt-4">
-
-    {# Manejo de mensajes flash (alertas o toasts) #}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          {% if category == 'toast' %}
-            <div class="toast-bottom">{{ message|safe }}</div>
-          {% else %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-            </div>
-          {% endif %}
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    {# Bloque donde se inyecta el contenido de otras plantillas que extienden esta base #}
-    {% block content %}{% endblock %}
+    {% if session.get('rol') == 'admin' %}
+      <a class="nav-link text-white" href="/crear/actas">Crear Actas</a>
+      <a class="nav-link text-white" href="/crear/informes">Crear Informes</a>
+      <a class="nav-link text-white" href="/crear/reportes">Crear Reportes</a>
+      <a class="nav-link text-white" href="/crear/comisiones">Crear Comisiones</a>
+      <a class="nav-link text-white" href="/admin">Usuarios</a>
+      <a class="nav-link text-white" href="/admin/documentos">Documentos</a>
+    {% endif %}
   </div>
+
+  <div class="d-flex align-items-center">
+    {% if session.get('nombre') %}
+      <span class="text-white me-3">👤 {{ session['nombre'] }}</span>
+    {% endif %}
+    <a class="btn btn-outline-light btn-sm" href="/logout">Cerrar sesión</a>
+  </div>
+</nav>
+
+<div class="container mt-4">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      {% if category == 'toast' %}
+        <div class="toast-bottom">{{ message|safe }}</div>
+      {% else %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endif %}
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
 
 </body>
 </html>

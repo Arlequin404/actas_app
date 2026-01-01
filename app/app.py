@@ -1,5 +1,6 @@
 # app.py
 from flask import Flask, render_template, request, redirect, session, url_for, flash
+from markupsafe import Markup
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -15,8 +16,10 @@ from io import BytesIO
 from datetime import datetime
 import pandas as pd
 
+# ===============================
+# Flask app
+# ===============================
 app = Flask(__name__)
-
 app.debug = False
 
 
@@ -25,10 +28,11 @@ app.debug = False
 # Carga de entorno y configuración
 # ===============================
 load_dotenv()
-
 APP_TZ = os.getenv("TZ", "America/Guayaquil")
 
+# ===============================
 # SMTP
+# ===============================
 SMTP_SERVER = os.getenv("SMTP_SERVER", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587") or 587)
 SMTP_USER = os.getenv("SMTP_USER", "")
@@ -85,18 +89,6 @@ def send_email(to_email: str, subject: str, html: str):
             server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
 
-def ensure_admin():
-    """Inserta admin por defecto si no existe. NO crea tablas aquí."""
-    with get_conn() as conn, conn.cursor() as cur:
-        cur.execute("""
-            INSERT INTO usuarios (nombre, email, password, rol)
-            VALUES (%s, %s, %s, %s)
-            ON CONFLICT (email) DO NOTHING
-        """, ("Admin", "admin@admin.com", "admin", "admin"))
-        conn.commit()
-
-
-ensure_admin()
 
 def local_time_str(fecha, hora, tz_name=APP_TZ):
     """Convierte (fecha, hora) UTC a zona local y devuelve HH:MM:SS."""
@@ -167,16 +159,21 @@ def exportar_documentos(tipo):
     if not require_login():
         return redirect('/')
 
-    if tipo not in ['actas', 'informes', 'reportes']:
+    if tipo not in ['actas', 'informes', 'reportes', 'comisiones']:
         flash("Tipo de documento no válido", "danger")
         return redirect('/dashboard')
 
     with get_conn() as conn:
         df = pd.read_sql_query(f"""
-            SELECT a.id, a.asunto, a.observaciones, a.fecha, a.hora, u.nombre AS funcionario
-            FROM {tipo} a
-            JOIN usuarios u ON u.id = a.id_usuario
-            ORDER BY a.fecha DESC, a.hora DESC
+            SELECT d.id,
+                   d.asunto,
+                   d.observaciones,
+                   d.fecha,
+                   d.hora,
+                   u.nombre AS funcionario
+            FROM {tipo} d
+            JOIN usuarios u ON u.id = d.id_usuario
+            ORDER BY d.fecha DESC, d.hora DESC
         """, conn)
 
     output = BytesIO()
@@ -185,12 +182,14 @@ def exportar_documentos(tipo):
 
     output.seek(0)
     filename = f"{tipo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
     return send_file(
         output,
         download_name=filename,
         as_attachment=True,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
 
 # ===============================
 # Recuperación de contraseña
@@ -295,19 +294,30 @@ def crear(tipo):
         return 'Acceso no autorizado'
 
     tipo = tipo.lower()
-    tablas_permitidas = {'actas', 'informes', 'reportes'}
+
+    # Mapeo seguro de tablas
+    tablas_permitidas = {
+        'actas': 'actas',
+        'informes': 'informes',
+        'reportes': 'reportes',
+        'comisiones': 'comisiones'
+    }
+
     if tipo not in tablas_permitidas:
         flash("Tipo de documento inválido.", "danger")
         return redirect('/dashboard')
 
-    if request.method == 'POST':
-        from datetime import datetime
-        import pytz
+    tabla = tablas_permitidas[tipo]
 
+    if request.method == 'POST':
         asunto = request.form.get('asunto', '').strip()
         observaciones = request.form.get('observaciones', '').strip()
 
-        # Obtener hora local de Ecuador
+        if not asunto:
+            flash("El asunto es obligatorio.", "warning")
+            return redirect(request.url)
+
+        # Hora local Ecuador
         timezone = pytz.timezone(APP_TZ)
         now = datetime.now(timezone)
         fecha = now.date()
@@ -315,51 +325,55 @@ def crear(tipo):
 
         with get_conn() as conn, conn.cursor() as cur:
             cur.execute(f"""
-                INSERT INTO {tipo} (asunto, observaciones, id_usuario, fecha, hora)
+                INSERT INTO {tabla} (asunto, observaciones, id_usuario, fecha, hora)
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING id
             """, (asunto, observaciones, session['user_id'], fecha, hora))
             doc_id = cur.fetchone()[0]
 
-            # correo destinatario = email del usuario que crea
-            cur.execute("SELECT email, nombre FROM usuarios WHERE id=%s", (session['user_id'],))
-            urow = cur.fetchone()
+            cur.execute(
+                "SELECT email FROM usuarios WHERE id=%s",
+                (session['user_id'],)
+            )
+            email_usuario = cur.fetchone()[0]
             conn.commit()
 
         hora_local = hora.strftime("%H:%M:%S")
 
-        # Notificación por correo
+        # Correo
         try:
             html = f"""
-            <h3>Se ha registrado un nuevo <b>{tipo}</b> correctamente.</h3>
-            <p><b>NÚMERO ASIGNADO:</b> {doc_id}</p>
+            <h3>Nuevo {tipo.capitalize()} registrado</h3>
+            <p><b>Número:</b> {doc_id}</p>
             <p><b>Asunto:</b> {asunto}</p>
             <p><b>Observaciones:</b> {observaciones}</p>
             <p><b>Fecha:</b> {fecha}</p>
             <p><b>Hora:</b> {hora_local}</p>
             <p><b>Funcionario:</b> {session['nombre']}</p>
             """
-            send_email(urow[0], f"{tipo.capitalize()} creada: {asunto}", html)
+            send_email(
+                email_usuario,
+                f"{tipo.capitalize()} creado: {asunto}",
+                html
+            )
         except Exception as e:
             print("Error al enviar correo:", e)
 
-        # Toast en UI
-        from markupsafe import Markup
+        # Toast
         flash(Markup(f"""
         <div class='toast-content'>
-            <h5>Se ha registrado un nuevo <b>{tipo}</b> correctamente.</h5>
-            <p><b>NÚMERO ASIGNADO:</b> {doc_id}</p>
+            <h5>{tipo.capitalize()} creado correctamente</h5>
+            <p><b>ID:</b> {doc_id}</p>
             <p><b>Asunto:</b> {asunto}</p>
-            <p><b>Observaciones:</b> {observaciones}</p>
             <p><b>Fecha:</b> {fecha}</p>
             <p><b>Hora:</b> {hora_local}</p>
-            <p><b>Funcionario:</b> {session['nombre']}</p>
         </div>
         """), 'toast')
 
         return redirect('/dashboard')
 
     return render_template('formulario.html', tipo=tipo)
+
 
 
 # ===============================
@@ -380,58 +394,58 @@ def admin_documentos():
         return redirect('/')
 
     with get_conn() as conn, conn.cursor() as cur:
+        # ACTAS
         cur.execute("""
-            SELECT a.id, a.asunto, a.fecha, TO_CHAR(a.hora, 'HH24:MI:SS'), u.nombre
-            FROM actas a JOIN usuarios u ON a.id_usuario = u.id
+            SELECT a.id, a.asunto, a.fecha,
+                   TO_CHAR(a.hora, 'HH24:MI:SS'),
+                   u.nombre
+            FROM actas a
+            JOIN usuarios u ON u.id = a.id_usuario
             ORDER BY a.id DESC
         """)
         actas = cur.fetchall()
 
+        # INFORMES
         cur.execute("""
-            SELECT i.id, i.asunto, i.fecha, TO_CHAR(i.hora, 'HH24:MI:SS'), u.nombre
-            FROM informes i JOIN usuarios u ON i.id_usuario = u.id
+            SELECT i.id, i.asunto, i.fecha,
+                   TO_CHAR(i.hora, 'HH24:MI:SS'),
+                   u.nombre
+            FROM informes i
+            JOIN usuarios u ON u.id = i.id_usuario
             ORDER BY i.id DESC
         """)
         informes = cur.fetchall()
 
+        # REPORTES
         cur.execute("""
-            SELECT r.id, r.asunto, r.fecha, TO_CHAR(r.hora, 'HH24:MI:SS'), u.nombre
-            FROM reportes r JOIN usuarios u ON r.id_usuario = u.id
+            SELECT r.id, r.asunto, r.fecha,
+                   TO_CHAR(r.hora, 'HH24:MI:SS'),
+                   u.nombre
+            FROM reportes r
+            JOIN usuarios u ON u.id = r.id_usuario
             ORDER BY r.id DESC
         """)
         reportes = cur.fetchall()
 
-    return render_template('admin_documentos.html', actas=actas, informes=informes, reportes=reportes)
+        # COMISIONES
+        cur.execute("""
+            SELECT c.id, c.asunto, c.fecha,
+                   TO_CHAR(c.hora, 'HH24:MI:SS'),
+                   u.nombre
+            FROM comisiones c
+            JOIN usuarios u ON u.id = c.id_usuario
+            ORDER BY c.id DESC
+        """)
+        comisiones = cur.fetchall()
 
-@app.route('/editar/<tipo>/<int:id>', methods=['GET', 'POST'])
-def editar_documento(tipo, id):
-    if not require_admin():
-        return redirect('/')
+    return render_template(
+        'admin_documentos.html',
+        actas=actas,
+        informes=informes,
+        reportes=reportes,
+        comisiones=comisiones
+    )
 
-    tipo = tipo.lower()
-    if tipo not in {'actas', 'informes', 'reportes'}:
-        flash("Tipo de documento inválido.", "danger")
-        return redirect('/admin/documentos')
-
-    if request.method == 'POST':
-        asunto = request.form.get('asunto', '').strip()
-        observaciones = request.form.get('observaciones', '').strip()
-        with get_conn() as conn, conn.cursor() as cur:
-            cur.execute(f"UPDATE {tipo} SET asunto=%s, observaciones=%s WHERE id=%s",
-                        (asunto, observaciones, id))
-            conn.commit()
-        flash(f'{tipo.capitalize()} ID {id} actualizado correctamente.', 'info')
-        return redirect('/admin/documentos')
-
-    with get_conn() as conn, conn.cursor() as cur:
-        cur.execute(f"SELECT asunto, observaciones FROM {tipo} WHERE id=%s", (id,))
-        doc = cur.fetchone()
-
-    if not doc:
-        flash("Documento no encontrado.", "warning")
-        return redirect('/admin/documentos')
-
-    return render_template('formulario.html', tipo=f"Editar {tipo}", asunto=doc[0], observaciones=doc[1])
 
 @app.route('/eliminar/<tipo>/<int:id>')
 def eliminar_documento(tipo, id):
@@ -439,7 +453,7 @@ def eliminar_documento(tipo, id):
         return redirect('/')
 
     tipo = tipo.lower()
-    if tipo not in {'actas', 'informes', 'reportes'}:
+    if tipo not in ['actas', 'informes', 'reportes', 'comisiones']:
         flash("Tipo de documento inválido.", "danger")
         return redirect('/admin/documentos')
 
@@ -535,35 +549,52 @@ def eliminar_usuario(id):
 def mis_documentos():
     if not require_login():
         return redirect('/')
-    if session.get('rol') != 'usuario':
-        return 'Acceso denegado'
 
     with get_conn() as conn, conn.cursor() as cur:
+
         cur.execute("""
-            SELECT a.id, a.asunto, a.observaciones, a.fecha, TO_CHAR(a.hora, 'HH24:MI:SS'), u.nombre
-            FROM actas a 
+            SELECT a.id, a.asunto, a.observaciones, a.fecha,
+                   TO_CHAR(a.hora, 'HH24:MI:SS'), u.nombre
+            FROM actas a
             JOIN usuarios u ON a.id_usuario = u.id
             ORDER BY a.id DESC
         """)
         actas = cur.fetchall()
 
         cur.execute("""
-            SELECT i.id, i.asunto, i.observaciones, i.fecha, TO_CHAR(i.hora, 'HH24:MI:SS'), u.nombre
-            FROM informes i 
+            SELECT i.id, i.asunto, i.observaciones, i.fecha,
+                   TO_CHAR(i.hora, 'HH24:MI:SS'), u.nombre
+            FROM informes i
             JOIN usuarios u ON i.id_usuario = u.id
             ORDER BY i.id DESC
         """)
         informes = cur.fetchall()
 
         cur.execute("""
-            SELECT r.id, r.asunto, r.observaciones, r.fecha, TO_CHAR(r.hora, 'HH24:MI:SS'), u.nombre
-            FROM reportes r 
+            SELECT r.id, r.asunto, r.observaciones, r.fecha,
+                   TO_CHAR(r.hora, 'HH24:MI:SS'), u.nombre
+            FROM reportes r
             JOIN usuarios u ON r.id_usuario = u.id
             ORDER BY r.id DESC
         """)
         reportes = cur.fetchall()
 
-    return render_template('mis_documentos.html', actas=actas, informes=informes, reportes=reportes)
+        cur.execute("""
+            SELECT c.id, c.asunto, c.observaciones, c.fecha,
+                   TO_CHAR(c.hora, 'HH24:MI:SS'), u.nombre
+            FROM comisiones c
+            JOIN usuarios u ON c.id_usuario = u.id
+            ORDER BY c.id DESC
+        """)
+        comisiones = cur.fetchall()
+
+    return render_template(
+        'mis_documentos.html',
+        actas=actas,
+        informes=informes,
+        reportes=reportes,
+        comisiones=comisiones
+    )
 
 
 # ===============================

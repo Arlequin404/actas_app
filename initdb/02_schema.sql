@@ -38,6 +38,16 @@ CREATE TABLE IF NOT EXISTS reportes (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS comisiones (
+    id SERIAL PRIMARY KEY,
+    id_usuario INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    asunto VARCHAR(255) NOT NULL,
+    observaciones TEXT,
+    fecha DATE NOT NULL,
+    hora  TIME NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS password_resets (
     id SERIAL PRIMARY KEY,
     email VARCHAR(120) NOT NULL,
