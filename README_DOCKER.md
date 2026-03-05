@@ -47,29 +47,18 @@ El sistema permite **crear, editar, listar, exportar y administrar documentos**,
 
 ## 📂 Estructura del proyecto
 
+```text
 actas_app/
-│
-├── app.py
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── README.md
-│
-├── templates/
-│ ├── base.html
-│ ├── login.html
-│ ├── dashboard.html
-│ ├── formulario.html
-│ ├── admin.html
-│ ├── admin_documentos.html
-│ ├── mis_documentos.html
-│
-├── static/
-│ ├── css/
-│ └── js/
-│
-└── sql/
-└── schema.sql
+├── app/               # Código fuente de la aplicación Flask
+│   ├── static/        # Archivos estáticos (CSS, JS, Imágenes)
+│   ├── templates/     # Plantillas Jinja2
+│   ├── models.py      # Definición de modelos SQLAlchemy
+│   └── app.py         # Punto de entrada y rutas
+├── initdb/            # Scripts de inicialización de la DB
+├── backups/           # Directorio local de respaldos (generado automáticamente)
+├── Dockerfile         # Configuración de imagen Docker para el Web
+└── docker-compose.yml # Orquestación de servicios
+```
 
 
 ---
