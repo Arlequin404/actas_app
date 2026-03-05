@@ -110,5 +110,5 @@ docker-compose up --build
 
 Usuario administrador por defecto
 
-Email: william.lopez@arconel.gob.ec
+Email: tu_correo@gmail.com
 Rol: admin
