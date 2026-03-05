@@ -50,3 +50,14 @@ class Reporte(db.Model):
     id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
 
     usuario = db.relationship("Usuario", back_populates="reportes")
+
+class Comision(db.Model):
+    __tablename__ = "comisiones"
+    id = db.Column(db.Integer, primary_key=True)
+    asunto = db.Column(db.Text, nullable=False)
+    observaciones = db.Column(db.Text)
+    fecha = db.Column(db.Date)
+    hora = db.Column(db.Time)
+    id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
+
+    usuario = db.relationship("Usuario", back_populates="comisiones")

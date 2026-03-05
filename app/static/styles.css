@@ -1,0 +1,590 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap');
+
+/* =========================================
+   Variables & Theme
+   ========================================= */
+:root {
+  /* ARCERNNR Inspired Palette */
+  --primary-navy: #0a2342;
+  /* Deep Official Navy */
+  --primary-light: #1c4b82;
+  /* Lighter Navy for gradients */
+  --accent-gold: #f4c430;
+  /* Gold/Yellow accent */
+  --accent-gold-hover: #d1a318;
+
+  --bg-gradient-start: #f0f4f8;
+  /* Light Gray-Blue */
+  --bg-gradient-end: #dfe9f3;
+
+  --text-main: #0a2342;
+  /* Navy for main text */
+  --text-muted: #536b88;
+  --text-light: #ffffff;
+
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(10, 35, 66, 0.1);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+}
+
+body {
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif;
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--primary-navy);
+  font-weight: 700;
+}
+
+/* =========================================
+   Navbar (Glassy)
+   ========================================= */
+.navbar {
+  background: var(--primary-navy) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.navbar-brand {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: var(--accent-gold) !important;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--accent-gold) !important;
+}
+
+.btn-outline-light {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.btn-outline-light:hover {
+  background-color: var(--accent-gold);
+  color: var(--primary-navy);
+  border-color: var(--accent-gold);
+}
+
+/* =========================================
+   Premium Cards (Glassmorphism)
+   ========================================= */
+.premium-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-md);
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.premium-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(10, 35, 66, 0.15);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid var(--accent-gold);
+  /* Gold underline */
+  color: var(--primary-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+}
+
+/* =========================================
+   Form Elements
+   ========================================= */
+.form-control,
+.form-select {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid #cdddeb;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  color: var(--primary-navy);
+  transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: #fff;
+  border-color: var(--primary-navy);
+  box-shadow: 0 0 0 4px rgba(10, 35, 66, 0.1);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--primary-navy);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* =========================================
+   Buttons
+   ========================================= */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-light) 100%);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 2rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 15px rgba(10, 35, 66, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-navy) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(10, 35, 66, 0.4);
+}
+
+/* =========================================
+   Animations
+   ========================================= */
+.fade-in-section {
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes slideUpFade {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Staggered animation delay helper if needed, 
+   but simplistic approach is fine for now */
+
+/* =========================================
+   Table Enhancements
+   ========================================= */
+.table {
+  color: var(--primary-navy);
+  border-color: #cdddeb;
+}
+
+.table thead th {
+  background-color: var(--primary-navy);
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  border: none;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(244, 196, 48, 0.1);
+  /* Gold tint on hover */
+}
+
+/* Fix horizontal scrollbar visibility and add vertical scroll if needed */
+.table-responsive {
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Fix background for themed sections when sticky and ensure high specificity */
+.table thead tr:nth-child(1) th.table-section-id,
+.table-section-id {
+  background-color: #e9ecef !important;
+  color: #0a2342 !important;
+}
+
+.table thead tr:nth-child(1) th.table-section-class,
+.table-section-class {
+  background-color: #dee2e6 !important;
+  color: #0a2342 !important;
+}
+
+.table thead tr:nth-child(1) th.table-section-details,
+.table-section-details {
+  background-color: #ced4da !important;
+  color: #0a2342 !important;
+}
+
+.table thead tr:nth-child(1) th.table-section-general,
+.table-section-general {
+  background-color: #adb5bd !important;
+  color: #0a2342 !important;
+}
+
+/* Floating Scrollbar Mirror */
+.floating-scroll-mirror {
+  position: fixed;
+  bottom: 0;
+  height: 15px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 1000;
+  display: none;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  border-top: 1px solid #ddd;
+}
+
+html.dark-mode .floating-scroll-mirror {
+  background: rgba(0, 0, 0, 0.8);
+  border-top: 1px solid #444;
+}
+
+.floating-scroll-inner {
+  height: 1px;
+}
+
+/* Re-adjust custom scrollbar for mirror */
+.floating-scroll-mirror::-webkit-scrollbar {
+  height: 12px;
+}
+
+.floating-scroll-mirror::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.floating-scroll-mirror::-webkit-scrollbar-thumb {
+  background: #6c757d;
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+html.dark-mode .table thead th.table-section-id {
+  background-color: #2c2c2c !important;
+  color: #fff !important;
+}
+
+html.dark-mode .table thead th.table-section-class {
+  background-color: #343a40 !important;
+  color: #fff !important;
+}
+
+html.dark-mode .table thead th.table-section-details {
+  background-color: #495057 !important;
+  color: #fff !important;
+}
+
+html.dark-mode .table thead th.table-section-general {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Custom Scrollbar for tables with fixed visibility */
+.table-responsive {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-light) #f1f1f1;
+}
+
+/* Custom Scrollbar for tables */
+.table-responsive::-webkit-scrollbar {
+  height: 12px;
+  /* Thicker for easier horizontal scrolling */
+  width: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #6c757d;
+  /* Neutral gray for better visibility */
+  border-radius: 6px;
+  border: 3px solid #f8f9fa;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-navy);
+}
+
+/* Make long texts in tables wrap nicely */
+.table-wrap-text,
+select option {
+  white-space: normal !important;
+  word-wrap: break-word;
+}
+
+.section-border-right {
+  border-right: 2px solid #536b88 !important;
+}
+
+html.dark-mode .section-border-right {
+  border-right: 2px solid #555 !important;
+}
+
+/* Section definitions consolidated above */
+
+html.dark-mode .table thead tr:nth-child(1) th.table-section-id,
+html.dark-mode .table-section-id {
+  background-color: #2c2c2c !important;
+  color: #fff !important;
+}
+
+html.dark-mode .table thead tr:nth-child(1) th.table-section-class,
+html.dark-mode .table-section-class {
+  background-color: #343a40 !important;
+  color: #fff !important;
+}
+
+html.dark-mode .table thead tr:nth-child(1) th.table-section-details,
+html.dark-mode .table-section-details {
+  background-color: #495057 !important;
+  color: #fff !important;
+}
+
+html.dark-mode .table thead tr:nth-child(1) th.table-section-general,
+html.dark-mode .table-section-general {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Generic Hover Lift */
+.hover-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* =========================================
+   Tabs Visibility Fix (Admin)
+   ========================================= */
+.nav-tabs .nav-link {
+  color: var(--primary-navy) !important;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+html.dark-mode .nav-tabs .nav-link {
+  color: #e0e0e0 !important;
+}
+
+.nav-tabs .nav-link:hover {
+  border-color: #e9ecef #e9ecef #dee2e6;
+  color: var(--primary-navy) !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--accent-gold) !important;
+  background-color: var(--primary-navy) !important;
+  border-color: var(--primary-navy);
+}
+
+/* =========================================
+   Dark Mode Overrides
+   ========================================= */
+html.dark-mode {
+  --bg-gradient-start: #121212;
+  --bg-gradient-end: #1e1e1e;
+  --text-main: #e0e0e0;
+  --text-muted: #a0a0a0;
+  /* --primary-navy: #bb86fc;  Avoid changing this globally as it affects bg colors too generally. 
+       Instead override specific elements */
+
+  --glass-bg: rgba(30, 30, 30, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+
+  --card-bg: #1e1e1e;
+}
+
+html.dark-mode body {
+  background: #121212;
+  /* Fallback */
+  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
+  color: var(--text-main);
+}
+
+html.dark-mode h1,
+html.dark-mode h2,
+html.dark-mode h3,
+html.dark-mode h4,
+html.dark-mode h5,
+html.dark-mode h6 {
+  color: #ffffff;
+  /* White headers in dark mode */
+}
+
+html.dark-mode .premium-card {
+  background: #1e1e1e;
+  border-color: #333;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+html.dark-mode .card {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+html.dark-mode .card-header {
+  background-color: #2c2c2c;
+  border-bottom-color: #333;
+  color: #e0e0e0;
+}
+
+html.dark-mode .card-header.bg-primary {
+  background-color: #3700b3 !important;
+  /* Darker primary for header */
+}
+
+html.dark-mode .card-header.bg-white {
+  background-color: #2c2c2c !important;
+  color: #e0e0e0 !important;
+}
+
+/* Form Elements Dark Mode */
+html.dark-mode .form-control,
+html.dark-mode .form-select {
+  background-color: #2c2c2c;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+html.dark-mode .form-control::placeholder {
+  color: #777;
+}
+
+html.dark-mode .form-label {
+  color: #e0e0e0;
+}
+
+/* List Group */
+html.dark-mode .list-group-item {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+html.dark-mode .list-group-item-action:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+html.dark-mode .list-group-item.active {
+  background-color: #3700b3;
+  /* Primary dark */
+  border-color: #3700b3;
+  color: #fff;
+}
+
+/* Tables Dark Mode */
+html.dark-mode .table {
+  color: #e0e0e0;
+  border-color: #333;
+  --bs-table-bg: transparent;
+  /* Fix bootstrap override */
+}
+
+html.dark-mode .table thead th {
+  background-color: #000000;
+  /* Distinct header */
+  color: #fff;
+  border-bottom: 2px solid #555;
+}
+
+html.dark-mode .table tbody td {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+html.dark-mode .table-hover tbody tr:hover td {
+  background-color: #333333;
+  /* Lighter for hover */
+  color: #ffffff;
+}
+
+html.dark-mode .table-light {
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+  --bs-table-bg: #2c2c2c;
+  --bs-table-color: #e0e0e0;
+}
+
+/* Navbar overrides for dark mode if needed (already dark by default in design, maybe just tweak) */
+html.dark-mode .navbar {
+  background: #000000 !important;
+  /* Pure black navbar in dark mode */
+}
+
+/* Modal */
+html.dark-mode .modal-content {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border: 1px solid #333;
+}
+
+html.dark-mode .modal-header {
+  border-bottom-color: #333;
+}
+
+html.dark-mode .modal-footer {
+  border-top-color: #333;
+}
+
+html.dark-mode .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+html.dark-mode .modal-header.bg-light {
+  background-color: #2c2c2c !important;
+}
+
+/* Navbar Brand Color override for visibility */
+html.dark-mode .navbar-brand {
+  color: var(--accent-gold) !important;
+}
+
+/* Text muted override */
+html.dark-mode .text-muted {
+  color: #9aa0a6 !important;
+}
+
+html.dark-mode .text-primary {
+  color: #bb86fc !important;
+  /* Light purple for primary text in dark mode */
+}
+
+/* Safe override for bg-light in dark mode */
+html.dark-mode .bg-light {
+  background-color: #2c2c2c !important;
+  color: #e0e0e0 !important;
+}

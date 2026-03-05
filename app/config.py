@@ -1,6 +1,6 @@
 import os
 
-# Database configuration (env-driven; defaults work with docker-compose)
+# Configuración de base de datos (controlada por env; los valores por defecto funcionan con docker-compose)
 DB_CONFIG = {
     'dbname': os.getenv('POSTGRES_DB', 'actas_db'),
     'user': os.getenv('POSTGRES_USER', 'postgres'),
@@ -9,10 +9,10 @@ DB_CONFIG = {
     'port': int(os.getenv('POSTGRES_PORT', '5432')),    
 }
 
-# Flask secret key
+# Clave secreta de Flask
 SECRET_KEY = os.getenv('SECRET_KEY', 'change-me')
 
-# SMTP settings
+# Configuración SMTP
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp')
 SMTP_FROM   = os.getenv('SMTP_FROM', 'notificaciones@actas.com')
 SMTP_PORT   = int(os.getenv('SMTP_PORT', '587'))

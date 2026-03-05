@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-primary fw-bold mb-0">Respaldo de Base de Datos</h2>
+                <a href="{{ url_for('admin_configuracion') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a Configuración
+                </a>
+            </div>
+
+            <!-- Exportar -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-cloud-download me-2"></i>Exportar Copia de Seguridad</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Descarga un archivo SQL con toda la información actual de la base de datos
+                        (usuarios, documentos, catálogos, etc.). Este archivo puede ser usado para restaurar el sistema
+                        en caso de pérdida de datos.</p>
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info small">
+                        <i class="bi bi-info-circle me-2"></i> El proceso puede tardar unos segundos dependiendo del
+                        tamaño de la base de datos.
+                    </div>
+                    <a href="{{ url_for('exportar_db') }}" class="btn btn-primary">
+                        <i class="bi bi-download me-1"></i> Generar y Descargar Respaldo (.sql)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Importar -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Importar Copia de Seguridad</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> <strong>¡ADVERTENCIA!</strong> Al importar
+                        un respaldo, se <strong>sobreescribirán</strong> los datos actuales. Asegúrese de que el archivo
+                        es válido antes de proceder.
+                    </div>
+
+                    <form action="{{ url_for('importar_db') }}" method="POST" enctype="multipart/form-data"
+                        id="importForm">
+                        <div class="mb-4">
+                            <label for="backup_file" class="form-label fw-bold">Seleccionar archivo SQL</label>
+                            <input class="form-control" type="file" id="backup_file" name="backup_file" accept=".sql"
+                                required>
+                            <div class="form-text">Solo se permiten archivos con extensión .sql generados por este
+                                sistema u otro dump de PostgreSQL.</div>
+                        </div>
+
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal"
+                            data-bs-target="#confirmImportModal">
+                            <i class="bi bi-upload me-1"></i> Iniciar Importación
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación Crítica -->
+<div class="modal fade" id="confirmImportModal" tabindex="-1" aria-labelledby="confirmImportModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmImportModalLabel"><i
+                        class="bi bi-exclamation-diamond me-2"></i>Confirmación Crítica</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <div class="mb-3 text-danger">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                </div>
+                <h4 class="text-danger fw-bold">¿Está absolutamente seguro?</h4>
+                <p class="mb-0">Esta acción <strong>borrará todos los datos actuales</strong> de la base de datos y los
+                    reemplazará con la información del archivo seleccionado.</p>
+                <p class="text-muted small mt-2">Esta operación no se puede deshacer de forma automática.</p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="document.getElementById('importForm').submit()">
+                    Sí, Entiendo los riesgos, Importar ahora
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // No se requiere lógica JS compleja gracias a los data-attributes de Bootstrap
+</script>
+{% endblock %}

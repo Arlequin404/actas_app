@@ -1,22 +1,20 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16
     container_name: actas_db
     environment:
-      POSTGRES_DB: actas_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      TZ: America/Guayaquil
+      POSTGRES_DB: ${POSTGRES_DB:-actas_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      TZ: ${TZ:-America/Guayaquil}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
+      - ./initdb:/docker-entrypoint-initdb.d:Z
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d actas_db"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-actas_db} -h 127.0.0.1 || exit 1" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
   web:
@@ -27,29 +25,22 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    environment:
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: actas_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/actas_db
-      SECRET_KEY: change-me
-      TZ: America/Guayaquil
     ports:
-      - "8080:8000"
+      - "127.0.0.1:8080:8000"
     restart: unless-stopped
 
   pgadmin:
     image: dpage/pgadmin4:8.11
     container_name: actas_pgadmin
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
+      TZ: ${TZ:-America/Guayaquil}
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"
     volumes:
       - pgadmin:/var/lib/pgadmin
     restart: unless-stopped

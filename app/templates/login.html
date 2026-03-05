@@ -4,39 +4,52 @@
 {# Inicio del bloque de contenido principal de la página #}
 {% block content %}
 
-  {# Contenedor centrado en la pantalla con un ancho máximo de 6 columnas (en pantallas medianas en adelante) #}
-  <div class="row justify-content-center">
-    <div class="col-md-6">
+{# Contenedor centrado en la pantalla con un ancho máximo de 6 columnas (en pantallas medianas en adelante) #}
+<div class="row justify-content-center">
+  <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5 col-lg-4">
 
-      {# Título principal del formulario centrado #}
-      <h2 class="mb-4 text-center">Iniciar sesión</h2>
-
-      {# Formulario de inicio de sesión que envía los datos por método POST a la ruta /login #}
-      <form method="post" action="/login">
-
-        {# Campo de entrada para el correo electrónico del usuario #}
-        <div class="mb-3">
-          <label for="email" class="form-label">Correo electrónico</label>
-          <input type="email" class="form-control" id="email" name="email" required placeholder="nombre@ejemplo.com">
+      <div class="premium-card text-center fade-in-section">
+        <div class="mb-4">
+          <i class="bi bi-lightning-charge-fill text-warning" style="font-size: 3rem;"></i>
         </div>
+        <h3 class="mb-1 fw-bold text-primary">ARCONEL</h3>
+        <h5 class="mb-4 text-muted small text-uppercase" style="letter-spacing: 2px;">DIRECCIÓN TÉCNICA DE CONTROL DE
+          DISTRIBUCIÓN</h5>
 
-        {# Campo de entrada para la contraseña del usuario #}
-        <div class="mb-3">
-          <label for="password" class="form-label">Contraseña</label>
-          <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+        <form method="post" action="/login" class="text-start">
+          <div class="mb-3">
+            <label for="email" class="form-label">Correo electrónico</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-envelope text-primary"></i></span>
+              <input type="email" class="form-control border-start-0 ps-0" id="email" name="email" required
+                placeholder="nombre@arconel.gob.ec">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="password" class="form-label">Contraseña</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-lock text-primary"></i></span>
+              <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" required
+                placeholder="••••••••">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 py-2 shadow-sm">
+            INGRESAR <i class="bi bi-box-arrow-in-right ms-2"></i>
+          </button>
+        </form>
+
+        <div class="text-center mt-4">
+          <a href="{{ url_for('recuperar_contraseña') }}" class="text-decoration-none small text-muted hover-link">
+            ¿Olvidaste tu contraseña?
+          </a>
         </div>
-
-        {# Botón para enviar el formulario de login. Ocupa todo el ancho disponible #}
-        <button type="submit" class="btn btn-primary w-100">Ingresar</button>
-      </form>
-
-      {# Enlace para recuperar contraseña. Apunta a la ruta Flask llamada recuperar_contraseña #}
-      <div class="text-center mt-3">
-        <a href="{{ url_for('recuperar_contraseña') }}">¿Olvidaste tu contraseña?</a>
       </div>
 
     </div>
   </div>
 
-{# Fin del bloque de contenido #}
-{% endblock %}
+  {# Fin del bloque de contenido #}
+  {% endblock %}

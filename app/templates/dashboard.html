@@ -4,11 +4,107 @@
 {# Define el bloque 'content' que será insertado en el bloque correspondiente de base.html #}
 {% block content %}
 
-  {# Encabezado de bienvenida que muestra el nombre del usuario desde la sesión #}
-  <h2>Bienvenido, {{ nombre }}</h2>
+<div class="row mb-5">
+  <div class="col-12 text-center fade-in-section">
+    <h2 class="display-5 fw-bold text-primary mb-3">Bienvenido al Sistema</h2>
+    <p class="lead text-muted">Gestión de Control de Actas, Informes y Reportes</p>
+  </div>
+</div>
 
-  {# Mensaje informativo debajo del título #}
-  <p>Seleccione una opción del menú.</p>
+<div class="row g-4 justify-content-center">
+
+  <!-- Accesos directos para Usuarios y Administradores -->
+  {% if session.get('rol') in ['usuario', 'admin'] %}
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.1s;">
+    <a href="/crear/actas" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 hover-lift">
+        <i class="bi bi-file-earmark-text text-primary display-4 mb-3"></i>
+        <h5 class="fw-bold">Crear Actas</h5>
+        <p class="text-muted small">Registro de actas de control.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.2s;">
+    <a href="/crear/informes" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 hover-lift">
+        <i class="bi bi-file-earmark-bar-graph text-warning display-4 mb-3"></i>
+        <h5 class="fw-bold">Crear Informes</h5>
+        <p class="text-muted small">Informes técnicos y de gestión.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.3s;">
+    <a href="/crear/reportes" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 hover-lift">
+        <i class="bi bi-flag text-danger display-4 mb-3"></i>
+        <h5 class="fw-bold">Crear Reportes</h5>
+        <p class="text-muted small">Reportes de novedades y alertas.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.4s;">
+    <a href="/crear/comisiones" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 hover-lift">
+        <i class="bi bi-people text-success display-4 mb-3"></i>
+        <h5 class="fw-bold">Crear Comisiones</h5>
+        <p class="text-muted small">Registro de comisiones de servicio.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.5s;">
+    <a href="/mis_documentos" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 hover-lift">
+        <i class="bi bi-folder2-open text-info display-4 mb-3"></i>
+        <h5 class="fw-bold">Mis Documentos</h5>
+        <p class="text-muted small">Historial de documentos creados.</p>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Sección de Administración -->
+  {% if session.get('rol') == 'admin' %}
+  <div class="col-12 mt-4 fade-in-section">
+    <hr>
+    <h4 class="text-primary mb-3">Administración</h4>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.6s;">
+    <a href="/admin" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 border-warning">
+        <i class="bi bi-people-fill text-dark display-4 mb-3"></i>
+        <h5 class="fw-bold">Usuarios</h5>
+        <p class="text-muted small">Gestión de usuarios y accesos.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.7s;">
+    <a href="/admin/documentos" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 border-warning">
+        <i class="bi bi-files text-secondary display-4 mb-3"></i>
+        <h5 class="fw-bold">Todos los Docs</h5>
+        <p class="text-muted small">Control total de documentos.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-6 col-lg-3 fade-in-section" style="animation-delay: 0.8s;">
+    <a href="/admin/configuracion" class="text-decoration-none">
+      <div class="premium-card h-100 text-center py-4 border-warning">
+        <i class="bi bi-gear-fill text-secondary display-4 mb-3"></i>
+        <h5 class="fw-bold">Configuración</h5>
+        <p class="text-muted small">Catálogos y parámetros.</p>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+
+</div>
 
 {# Cierre del bloque de contenido #}
 {% endblock %}

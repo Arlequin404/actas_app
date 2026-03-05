@@ -1,0 +1,64 @@
+﻿
+app.py:67:def get_conn():
+app.py:71:def password_match
+es(db_password: str, 
+provided: str) -> bool:
+app.py:75:def 
+send_email(to_email: str, 
+subject: str, html: str):
+app.py:97:def 
+local_time_str(fecha, hora, 
+tz_name=APP_TZ):
+app.py:108:def 
+require_login():
+app.py:128:def 
+require_admin():
+app.py:139:def 
+get_catalogo(categoria):
+app.py:150:def 
+build_hierarchy(items, 
+parent_id=None):
+app.py:178:def 
+get_jerarquia_informes():
+app.py:197:def index():
+app.py:201:def login():
+app.py:219:def logout():
+app.py:224:def dashboard():
+app.py:233:def 
+exportar_documentos(tipo):
+app.py:435:def 
+recuperar_contrasena():
+app.py:439:def 
+enviar_recuperacion():
+app.py:486:def restablecer_c
+ontrasena(token):
+app.py:525:def 
+admin_configuracion():
+app.py:531:def api_get_catal
+ogos(categoria):
+app.py:550:def 
+api_create_catalogo():
+app.py:588:def 
+api_update_catalogo(id):
+app.py:626:def 
+api_delete_catalogo(id):
+app.py:643:def crear(tipo):
+app.py:1267:def admin():
+app.py:1283:def 
+admin_documentos():
+app.py:1942:def 
+eliminar_documento(tipo, 
+id):
+app.py:1962:def 
+crear_usuario():
+app.py:1989:def 
+editar_usuario(id):
+app.py:2053:def 
+eliminar_usuario(id):
+app.py:2068:def 
+mis_documentos():
+app.py:2185:def crear_usuari
+o_directo(nombre, email, 
+password, rol):
+
+

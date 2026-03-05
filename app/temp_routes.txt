@@ -1,0 +1,65 @@
+﻿
+app.py:196:@app.route('/')
+app.py:200:@app.route('/logi
+n', methods=['POST'])
+app.py:218:@app.route('/logo
+ut')
+app.py:223:@app.route('/dash
+board')
+app.py:232:@app.route('/expo
+rtar_documentos/<tipo>', 
+methods=['GET'])
+app.py:433:@app.route('/recu
+perar_contrasena', 
+methods=['GET'])
+app.py:434:@app.route('/recu
+perar_contraseña', 
+methods=['GET'], endpoint='r
+ecuperar_contraseña')
+app.py:438:@app.route('/envi
+ar_recuperacion', 
+methods=['POST'])
+app.py:484:@app.route('/rest
+ablecer_contrasena/<token>',
+ methods=['GET', 'POST'])
+app.py:485:@app.route('/rest
+ablecer_contraseña/<token>',
+ methods=['GET', 'POST'], en
+dpoint='restablecer_contrase
+ña')
+app.py:524:@app.route('/admi
+n/configuracion')
+app.py:530:@app.route('/api/
+catalogos/<categoria>', 
+methods=['GET'])
+app.py:549:@app.route('/api/
+catalogos', 
+methods=['POST'])
+app.py:587:@app.route('/api/
+catalogos/<int:id>', 
+methods=['PUT'])
+app.py:625:@app.route('/api/
+catalogos/<int:id>', 
+methods=['DELETE'])
+app.py:642:@app.route('/crea
+r/<tipo>', methods=['GET', 
+'POST'])
+app.py:1266:@app.route('/adm
+in')
+app.py:1282:@app.route('/adm
+in/documentos')
+app.py:1941:@app.route('/eli
+minar/<tipo>/<int:id>')
+app.py:1961:@app.route('/adm
+in/usuarios/crear', 
+methods=['GET', 'POST'])
+app.py:1988:@app.route('/adm
+in/usuarios/editar/<int:id>'
+, methods=['GET', 'POST'])
+app.py:2052:@app.route('/adm
+in/usuarios/eliminar/<int:id
+>')
+app.py:2067:@app.route('/mis
+_documentos')
+
+

@@ -1,47 +1,81 @@
 {# Extiende la plantilla base.html, heredando su estructura general #}
 {% extends "base.html" %}
 
-{# Bloque de contenido principal de la página #}
 {% block content %}
 
-  {# Título dinámico: muestra 'Crear Usuario' o 'Editar Usuario' según el valor de la variable 'modo' #}
-  <h2>{{ modo }} Usuario</h2>
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white py-3 border-0">
+        <h3 class="text-primary fw-bold mb-0">
+          <i class="bi bi-person-gear me-2"></i>{{ modo }} Usuario
+        </h3>
+      </div>
+      <div class="card-body p-4">
+        <form method="post">
+          <!-- ================= NOMBRE ================= -->
+          <div class="mb-4">
+            <label for="nombre" class="form-label fw-bold text-muted small text-uppercase">Nombre Completo</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-primary"></i></span>
+              <input type="text" class="form-control bg-light border-start-0" id="nombre" name="nombre" required
+                value="{{ usuario[1] if usuario else '' }}" placeholder="Ej: Juan Pérez">
+            </div>
+          </div>
 
-  {# Formulario para crear o editar un usuario. Usa el método POST para enviar los datos al servidor #}
-  <form method="post" class="mt-4">
+          <!-- ================= CORREO ================= -->
+          <div class="mb-4">
+            <label for="email" class="form-label fw-bold text-muted small text-uppercase">Correo Electrónico</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-primary"></i></span>
+              <input type="email" class="form-control bg-light border-start-0" id="email" name="email" required
+                value="{{ usuario[2] if usuario else '' }}" placeholder="usuario@ejemplo.com">
+            </div>
+          </div>
 
-    {# Campo para el nombre del usuario #}
-    <div class="mb-3">
-      <label for="nombre" class="form-label">Nombre</label>
-      <input type="text" class="form-control" id="nombre" name="nombre" required value="{{ usuario[0] if usuario else '' }}">
+          <!-- ================= CONTRASEÑA ================= -->
+          <div class="mb-4">
+            <label for="password" class="form-label fw-bold text-muted small text-uppercase">Contraseña</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-primary"></i></span>
+              <input type="password" class="form-control bg-light border-start-0" id="password" name="password" {% if
+                modo=='Crear' %}required{% endif %}
+                placeholder="{% if modo == 'Editar' %}Dejar vacío para no cambiar{% endif %}">
+            </div>
+            {% if modo == 'Editar' %}
+            <div class="form-text mt-2"><i class="bi bi-info-circle me-1"></i> Solo complete esto si desea actualizar la
+              contraseña.</div>
+            {% endif %}
+          </div>
+
+          <!-- ================= ROL ================= -->
+          <div class="mb-4">
+            <label for="rol" class="form-label fw-bold text-muted small text-uppercase">Rol del Sistema</label>
+            <div class="input-group">
+              <span class="input-group-text bg-light border-end-0"><i
+                  class="bi bi-shield-check text-primary"></i></span>
+              <select class="form-select bg-light border-start-0" id="rol" name="rol">
+                <option value="usuario" {% if usuario and usuario[3]=='usuario' %}selected{% endif %}>
+                  Usuario (Consulta y Registro)
+                </option>
+                <option value="admin" {% if usuario and usuario[3]=='admin' %}selected{% endif %}>
+                  Admin (Gestión Completa)
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ================= BOTONES ================= -->
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+            <a href="/admin" class="btn btn-light px-4 fw-bold">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
+              <i class="bi bi-check2-circle me-2"></i>{{ modo }} Usuario
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-
-    {# Campo para el correo electrónico del usuario #}
-    <div class="mb-3">
-      <label for="email" class="form-label">Correo</label>
-      <input type="email" class="form-control" id="email" name="email" required value="{{ usuario[1] if usuario else '' }}">
-    </div>
-
-    {# Campo para la contraseña del usuario #}
-    <div class="mb-3">
-      <label for="password" class="form-label">Contraseña</label>
-      <input type="text" class="form-control" id="password" name="password" required value="{{ usuario[2] if usuario else '' }}">
-    </div>
-
-    {# Campo para seleccionar el rol del usuario: usuario o admin #}
-    <div class="mb-3">
-      <label for="rol" class="form-label">Rol</label>
-      <select class="form-select" id="rol" name="rol">
-        <option value="usuario" {% if usuario and usuario[3] == 'usuario' %}selected{% endif %}>Usuario</option>
-        <option value="admin" {% if usuario and usuario[3] == 'admin' %}selected{% endif %}>Admin</option>
-      </select>
-    </div>
-
-    {# Botón para enviar el formulario. Su texto depende de si se está creando o editando #}
-    <button type="submit" class="btn btn-primary">{{ modo }}</button>
-
-    {# Botón para cancelar y volver a la vista de administración #}
-    <a href="/admin" class="btn btn-secondary">Cancelar</a>
-  </form>
+  </div>
+</div>
 
 {% endblock %}

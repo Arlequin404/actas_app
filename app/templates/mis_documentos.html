@@ -1,158 +1,389 @@
-{# Hereda el diseño base desde "base.html" (menú, estilos, scripts comunes) #}
 {% extends "base.html" %}
 
-{% block content %}
+{% block container_start %}
+<div class="container-fluid mt-4">
+  {% endblock %}
 
-<h2>Documentos Registrados</h2>
+  {% block content %}
 
-{# Navegación por pestañas #}
-<ul class="nav nav-tabs" id="tabDocs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="actas-tab" data-bs-toggle="tab" data-bs-target="#actas" type="button" role="tab">
-      Actas
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="informes-tab" data-bs-toggle="tab" data-bs-target="#informes" type="button" role="tab">
-      Informes
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="reportes-tab" data-bs-toggle="tab" data-bs-target="#reportes" type="button" role="tab">
-      Reportes
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="comisiones-tab" data-bs-toggle="tab" data-bs-target="#comisiones" type="button" role="tab">
-      Comisiones
-    </button>
-  </li>
-</ul>
-
-<div class="tab-content mt-3" id="tabDocsContent">
-
-  {# ----------- TABLA DE ACTAS ----------- #}
-  <div class="tab-pane fade show active" id="actas" role="tabpanel">
-    <a href="/exportar_documentos/actas" class="btn btn-success btn-sm mb-2">📥 Exportar Actas a Excel</a>
-
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>N° Acta</th>
-          <th>Asunto</th>
-          <th>Observaciones</th>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Funcionario</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in actas %}
-        <tr>
-          <td>{{ a[0] }}</td>
-          <td>{{ a[1] }}</td>
-          <td>{{ a[2] }}</td>
-          <td>{{ a[3] }}</td>
-          <td>{{ a[4] }}</td>
-          <td>{{ a[5] }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="row align-items-center mb-3">
+    <div class="col-md-6">
+      <h2>Documentos Registrados</h2>
+    </div>
+    <div class="col-md-6">
+      <form method="GET" class="row g-2 justify-content-end align-items-center">
+        <div class="col-auto">
+          <label for="empresa" class="col-form-label">Filtrar por Empresa:</label>
+        </div>
+        <div class="col-auto">
+          <select name="empresa" id="empresa" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">— Todas las empresas —</option>
+            {% for emp in empresas %}
+            <option value="{{ emp.valor or emp.nombre }}" {% if empresa_sel==(emp.valor or emp.nombre) %}selected{%
+              endif %}>
+              {{ emp.nombre }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <input type="hidden" name="tab" id="hidden_tab" value="{{ active_tab }}">
+        <div class="col-auto">
+          <a href="/mis_documentos" class="btn btn-secondary btn-sm">Limpiar</a>
+        </div>
+      </form>
+    </div>
   </div>
 
-  {# ----------- TABLA DE INFORMES ----------- #}
-  <div class="tab-pane fade" id="informes" role="tabpanel">
-    <a href="/exportar_documentos/informes" class="btn btn-success btn-sm mb-2">📥 Exportar Informes a Excel</a>
+  {# Navegación por pestañas #}
+  <ul class="nav nav-tabs" id="tabDocs" role="tablist">
+    <li class="nav-item">
+      <button class="nav-link {% if active_tab == 'actas' %}active{% endif %}" data-bs-toggle="tab"
+        data-bs-target="#actas" onclick="setTab('actas')">
+        Actas
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link {% if active_tab == 'informes' %}active{% endif %}" data-bs-toggle="tab"
+        data-bs-target="#informes" onclick="setTab('informes')">
+        Informes
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link {% if active_tab == 'reportes' %}active{% endif %}" data-bs-toggle="tab"
+        data-bs-target="#reportes" onclick="setTab('reportes')">
+        Reportes
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link {% if active_tab == 'comisiones' %}active{% endif %}" data-bs-toggle="tab"
+        data-bs-target="#comisiones" onclick="setTab('comisiones')">
+        Comisiones
+      </button>
+    </li>
+  </ul>
 
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>N° Informe</th>
-          <th>Asunto</th>
-          <th>Observaciones</th>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Funcionario</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for i in informes %}
-        <tr>
-          <td>{{ i[0] }}</td>
-          <td>{{ i[1] }}</td>
-          <td>{{ i[2] }}</td>
-          <td>{{ i[3] }}</td>
-          <td>{{ i[4] }}</td>
-          <td>{{ i[5] }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="tab-content mt-3">
+
+    <!-- ============== ACTAS ============== -->
+    <div class="tab-pane fade {% if active_tab == 'actas' %}show active{% endif %}" id="actas">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <a href="/exportar_documentos/actas" class="btn btn-success btn-sm">
+          📥 Exportar Actas a Excel
+        </a>
+        <span class="badge bg-dark">Página {{ page }} de {{ pages_a if pages_a > 0 else 1 }}</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover table-sm table-wrap-text">
+          <thead class="table-dark text-center align-middle">
+            <tr>
+              <th colspan="2" class="table-section-id section-border-right">Identificación</th>
+              <th colspan="2" class="table-section-class section-border-right">Clasificación</th>
+              <th colspan="2" class="table-section-details section-border-right">Detalles</th>
+              <th colspan="3" class="table-section-general">Datos Generales</th>
+              <th rowspan="2">Acciones</th>
+            </tr>
+            <tr>
+              <th>Código</th>
+              <th class="col-company section-border-right">Empresa</th>
+              <th>Gestiones</th>
+              <th class="section-border-right">Productos asociados</th>
+              <th class="col-desc">Asunto</th>
+              <th class="col-desc section-border-right">Observaciones</th>
+              <th class="col-short">Fecha</th>
+              <th class="col-short">Hora</th>
+              <th>Funcionario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in actas %}
+            <tr>
+              <td>{{ a[1] }}</td>
+              <td class="section-border-right">{{ a[2] }}</td>
+              <td>{{ a[3] or '—' }}</td>
+              <td class="section-border-right">{{ a[4] or '—' }}</td>
+              <td>{{ a[5] }}</td>
+              <td class="section-border-right">{{ a[6] }}</td>
+              <td>{{ a[7] }}</td>
+              <td>{{ a[8] }}</td>
+              <td>{{ a[9] }}</td>
+              <td class="text-center">
+                <a href="/admin/editar/actas/{{ a[0] }}" class="btn btn-warning btn-sm">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="10" class="text-center">No se encontraron actas.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ render_pagination(page, pages_a, 'actas', empresa_sel, per_page) }}
+    </div>
+
+    <!-- ============== INFORMES ============== -->
+    <div class="tab-pane fade {% if active_tab == 'informes' %}show active{% endif %}" id="informes">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <a href="/exportar_documentos/informes" class="btn btn-success btn-sm">
+          📥 Exportar Informes a Excel
+        </a>
+        <span class="badge bg-dark">Página {{ page }} de {{ pages_i if pages_i > 0 else 1 }}</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover table-sm table-wrap-text">
+          <thead class="table-dark text-center align-middle">
+            <tr>
+              <th colspan="2" class="table-section-id section-border-right">Identificación</th>
+              <th colspan="3" class="table-section-class section-border-right">Clasificación & Detalles</th>
+              <th colspan="5" class="table-section-details section-border-right">Detalles Caso Fortuito (Si aplica)</th>
+              <th colspan="5" class="table-section-general">Datos Generales</th>
+              <th rowspan="2">Acciones</th>
+            </tr>
+            <tr>
+              <th>Código</th>
+              <th class="col-company section-border-right">Empresa</th>
+              <th>Gestiones</th>
+              <th class="col-desc">Tipo de informe</th>
+              <th class="section-border-right">Productos asociados</th>
+              <th>Elemento Afectado</th>
+              <th>Alimentador</th>
+              <th>Subestación</th>
+              <th>Línea Subtransmision</th>
+              <th class="col-short section-border-right">Fecha int.</th>
+              <th class="col-desc">Asunto</th>
+              <th class="col-desc section-border-right">Observaciones</th>
+              <th class="col-short">Fecha</th>
+              <th class="col-short">Hora</th>
+              <th>Funcionario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in informes %}
+            <tr>
+              <td>{{ i[1] }}</td>
+              <td class="section-border-right">{{ i[2] }}</td>
+              <td>{{ i[3] or '—' }}</td>
+              <td>{{ i[5] }}</td>
+              <td class="section-border-right">{{ i[4] or '—' }}</td>
+              <td>{{ i[6] or '—' }}</td>
+              <td>{{ i[7] or '—' }}</td>
+              <td>{{ i[8] or '—' }}</td>
+              <td>{{ i[9] or '—' }}</td>
+              <td class="section-border-right">{{ i[10] or '—' }}</td>
+              <td>{{ i[11] }}</td>
+              <td class="section-border-right">{{ i[12] }}</td>
+              <td>{{ i[13] }}</td>
+              <td>{{ i[14] }}</td>
+              <td>{{ i[15] }}</td>
+              <td class="text-center">
+                <a href="/admin/editar/informes/{{ i[0] }}" class="btn btn-warning btn-sm">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="16" class="text-center">No se encontraron informes.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ render_pagination(page, pages_i, 'informes', empresa_sel, per_page) }}
+    </div>
+
+    <!-- ============== REPORTES ============== -->
+    <div class="tab-pane fade {% if active_tab == 'reportes' %}show active{% endif %}" id="reportes">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <a href="/exportar_documentos/reportes" class="btn btn-success btn-sm">
+          📥 Exportar Reportes a Excel
+        </a>
+        <span class="badge bg-dark">Página {{ page }} de {{ pages_r if pages_r > 0 else 1 }}</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover table-sm table-wrap-text">
+          <thead class="table-dark text-center align-middle">
+            <tr>
+              <th colspan="2" class="table-section-id section-border-right">Identificación</th>
+              <th colspan="3" class="table-section-class section-border-right">Clasificación</th>
+              <th colspan="2" class="table-section-details section-border-right">Detalles</th>
+              <th colspan="3" class="table-section-general">Datos Generales</th>
+              <th rowspan="2">Acciones</th>
+            </tr>
+            <tr>
+              <th>Código</th>
+              <th class="col-company section-border-right">Empresa</th>
+              <th>Gestiones</th>
+              <th class="col-desc">Tipo de reporte</th>
+              <th class="section-border-right">Productos asociados</th>
+              <th class="col-desc">Asunto</th>
+              <th class="col-desc section-border-right">Observaciones</th>
+              <th class="col-short">Fecha</th>
+              <th class="col-short">Hora</th>
+              <th>Funcionario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in reportes %}
+            <tr>
+              <td>{{ r[1] }}</td>
+              <td class="section-border-right">{{ r[2] }}</td>
+              <td>{{ r[3] or '—' }}</td>
+              <td>{{ r[5] }}</td>
+              <td class="section-border-right">{{ r[4] or '—' }}</td>
+              <td>{{ r[6] }}</td>
+              <td class="section-border-right">{{ r[7] }}</td>
+              <td>{{ r[8] }}</td>
+              <td>{{ r[9] }}</td>
+              <td>{{ r[10] }}</td>
+              <td class="text-center">
+                <a href="/admin/editar/reportes/{{ r[0] }}" class="btn btn-warning btn-sm">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="11" class="text-center">No se encontraron reportes.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ render_pagination(page, pages_r, 'reportes', empresa_sel, per_page) }}
+    </div>
+
+    <!-- ============== COMISIONES ============== -->
+    <div class="tab-pane fade {% if active_tab == 'comisiones' %}show active{% endif %}" id="comisiones">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <a href="/exportar_documentos/comisiones" class="btn btn-success btn-sm">
+          📥 Exportar Comisiones a Excel
+        </a>
+        <span class="badge bg-dark">Página {{ page }} de {{ pages_c if pages_c > 0 else 1 }}</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-hover table-sm table-wrap-text">
+          <thead class="table-dark text-center align-middle">
+            <tr>
+              <th colspan="2" class="table-section-id section-border-right">Identificación</th>
+              <th colspan="2" class="table-section-class section-border-right">Clasificación</th>
+              <th colspan="2" class="table-section-details section-border-right">Detalles</th>
+              <th colspan="3" class="table-section-general">Datos Generales</th>
+              <th rowspan="2">Acciones</th>
+            </tr>
+            <tr>
+              <th>Código</th>
+              <th class="col-company section-border-right">Empresa</th>
+              <th>Gestiones</th>
+              <th class="section-border-right">Productos asociados</th>
+              <th class="col-desc">Asunto</th>
+              <th class="col-desc section-border-right">Observaciones</th>
+              <th class="col-short">Fecha</th>
+              <th class="col-short">Hora</th>
+              <th>Funcionario</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in comisiones %}
+            <tr>
+              <td>{{ c[1] }}</td>
+              <td class="section-border-right">{{ c[2] }}</td>
+              <td>{{ c[3] or '—' }}</td>
+              <td class="section-border-right">{{ c[4] or '—' }}</td>
+              <td>{{ c[5] }}</td>
+              <td class="section-border-right">{{ c[6] }}</td>
+              <td>{{ c[7] }}</td>
+              <td>{{ c[8] }}</td>
+              <td>{{ c[9] }}</td>
+              <td class="text-center">
+                <a href="/admin/editar/comisiones/{{ c[0] }}" class="btn btn-warning btn-sm">
+                  <i class="bi bi-pencil-square"></i> Editar
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="10" class="text-center">No se encontraron comisiones.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ render_pagination(page, pages_c, 'comisiones', empresa_sel, per_page) }}
+    </div>
+
   </div>
 
-  {# ----------- TABLA DE REPORTES ----------- #}
-  <div class="tab-pane fade" id="reportes" role="tabpanel">
-    <a href="/exportar_documentos/reportes" class="btn btn-success btn-sm mb-2">📥 Exportar Reportes a Excel</a>
+  <script>
+    function setTab(name) {
+      document.getElementById('hidden_tab').value = name;
+      const url = new URL(window.location);
+      url.searchParams.set('tab', name);
+      window.history.replaceState({}, '', url);
+    }
+  </script>
 
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>N° Reporte</th>
-          <th>Asunto</th>
-          <th>Observaciones</th>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Funcionario</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in reportes %}
-        <tr>
-          <td>{{ r[0] }}</td>
-          <td>{{ r[1] }}</td>
-          <td>{{ r[2] }}</td>
-          <td>{{ r[3] }}</td>
-          <td>{{ r[4] }}</td>
-          <td>{{ r[5] }}</td>
-        </tr>
+  {% endblock %}
+
+  {% macro render_pagination(current_page, total_pages, tab_name, empresa_sel, per_page) %}
+  <div class="d-flex flex-column align-items-center mb-4">
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation">
+      <ul class="pagination pagination-sm justify-content-center mt-3">
+        <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+          <a class="page-link"
+            href="?page={{ current_page - 1 }}&empresa={{ empresa_sel }}&tab={{ tab_name }}&per_page={{ per_page }}">«
+            Anterior</a>
+        </li>
+
+        {% set start = [1, current_page - 2]|max %}
+        {% set end = [total_pages, current_page + 2]|min %}
+
+        {% if start > 1 %}
+        <li class="page-item"><a class="page-link"
+            href="?page=1&empresa={{ empresa_sel }}&tab={{ tab_name }}&per_page={{ per_page }}">1</a></li>
+        {% if start > 2 %}<li class="page-item disabled"><span class="page-link">...</span></li>{% endif %}
+        {% endif %}
+
+        {% for p in range(start, end + 1) %}
+        <li class="page-item {% if p == current_page %}active{% endif %}">
+          <a class="page-link"
+            href="?page={{ p }}&empresa={{ empresa_sel }}&tab={{ tab_name }}&per_page={{ per_page }}">{{ p }}</a>
+        </li>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
 
-  {# ----------- TABLA DE COMISIONES ----------- #}
-  <div class="tab-pane fade" id="comisiones" role="tabpanel">
-    <a href="/exportar_documentos/comisiones" class="btn btn-success btn-sm mb-2">
-      📥 Exportar Comisiones a Excel
-    </a>
+        {% if end < total_pages %} {% if end < total_pages - 1 %}<li class="page-item disabled"><span
+            class="page-link">...</span></li>{% endif %}
+          <li class="page-item"><a class="page-link"
+              href="?page={{ total_pages }}&empresa={{ empresa_sel }}&tab={{ tab_name }}&per_page={{ per_page }}">{{
+              total_pages }}</a></li>
+          {% endif %}
 
-    <table class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>N° Comisión</th>
-          <th>Asunto</th>
-          <th>Observaciones</th>
-          <th>Fecha</th>
-          <th>Hora</th>
-          <th>Funcionario</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for c in comisiones %}
-        <tr>
-          <td>{{ c[0] }}</td>
-          <td>{{ c[1] }}</td>
-          <td>{{ c[2] }}</td>
-          <td>{{ c[3] }}</td>
-          <td>{{ c[4] }}</td>
-          <td>{{ c[5] }}</td>
-        </tr>
+          <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+            <a class="page-link"
+              href="?page={{ current_page + 1 }}&empresa={{ empresa_sel }}&tab={{ tab_name }}&per_page={{ per_page }}">Siguiente
+              »</a>
+          </li>
+      </ul>
+    </nav>
+    {% endif %}
+
+    <div class="mt-2 text-muted small">
+      Mostrar:
+      <div class="btn-group btn-group-sm ms-2" role="group">
+        {% for val in ['10', '20', '30', '40', 'all'] %}
+        <a href="?page=1&empresa={{ empresa_sel }}&tab={{ tab_name }}&per_page={{ val }}"
+          class="btn btn-outline-secondary {% if per_page == val %}active{% endif %}">
+          {{ 'Todos' if val == 'all' else val }}
+        </a>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
   </div>
-
-</div>
-
-{% endblock %}
+  {% endmacro %}

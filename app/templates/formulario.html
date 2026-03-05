@@ -1,30 +1,735 @@
-{# Extiende la plantilla base para usar su estructura general (menú, cabecera, etc.) #}
+{# Extiende la plantilla base para usar su estructura general #}
 {% extends "base.html" %}
 
-{# Inicia el bloque de contenido específico de esta vista #}
 {% block content %}
 
-  {# Título dinámico que muestra el tipo de documento, por ejemplo: Acta, Informe o Reporte #}
-  <h2>{{ tipo }}</h2>
+<div class="row justify-content-center">
+  <div class="col-12">
 
-  {# Formulario de registro/edición del documento. Usa método POST para enviar los datos al servidor #}
-  <form method="post" class="mt-4">
-
-    {# Campo de entrada para el asunto del documento #}
-    <div class="mb-3">
-      <label for="asunto" class="form-label">Asunto</label>
-      <input type="text" class="form-control" id="asunto" name="asunto" required value="{{ asunto or '' }}">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <style>
+        /* Permitir que las opciones se ajusten en algunos navegadores y asegurar la utilización completa del ancho */
+        select option {
+          white-space: normal;
+          word-wrap: break-word;
+        }
+      </style>
+      <h2 class="mb-4 text-center text-primary fw-bold">
+        {% if editar %}
+        Editar {{ 'Comisión' if tipo == 'comisiones' else (tipo[:-1] | capitalize if tipo != 'actas' else 'Acta') }} #{{
+        id }}
+        {% else %}
+        Crear {{ 'Comisión' if tipo == 'comisiones' else (tipo[:-1] | capitalize if tipo != 'actas' else 'Acta') }}
+        {% endif %}
+      </h2>
     </div>
 
-    {# Campo de texto para ingresar observaciones adicionales #}
-    <div class="mb-3">
-      <label for="observaciones" class="form-label">Observaciones</label>
-      <textarea class="form-control" id="observaciones" name="observaciones" rows="4">{{ observaciones or '' }}</textarea>
-    </div>
+    <form method="post" class="needs-validation" novalidate id="mainForm">
 
-    {# Botón para enviar el formulario y guardar el documento #}
-    <button type="submit" class="btn btn-primary">Guardar</button>
-  </form>
+      <!-- Entrada oculta para el valor calculado final de Tipo de Informe -->
+      <input type="hidden" id="final_tipo_informe" name="tipo_informe" value="{{ tipo_informe or '' }}">
 
-{# Cierra el bloque de contenido #}
+      <!-- ================= NÚMERO DE DOCUMENTO (SOLO EDICIÓN) ================= -->
+      {% if editar %}
+      <div class="premium-card">
+        <h5 class="section-title"><i class="bi bi-hash me-2"></i>Configuración de Identificador</h5>
+        <div class="mb-3">
+          <label for="numero_manual" class="form-label">Número correlativo</label>
+          <input type="number" class="form-control" id="numero_manual" name="numero_manual"
+            placeholder="Ingrese el número correlativo" value="{{ numero_original or '' }}">
+          <small class="text-muted">Modificar este número actualizará el código generado del documento.</small>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ================= EMPRESA ================= -->
+      <div class="premium-card">
+        <h5 class="section-title"><i class="bi bi-building me-2"></i>Información de la Empresa</h5>
+
+        <div class="mb-3">
+          <label for="empresa" class="form-label">Empresa eléctrica</label>
+          <select class="form-select form-select-lg" id="empresa" name="empresa" required>
+            <option value="">-- Seleccione una empresa --</option>
+            {% for item in empresas %}
+            <option value="{{ item.valor or item.nombre }}" title="{{ item.nombre }}" {% if empresa_sel==(item.valor or
+              item.nombre) %}selected{% endif %}>
+              {{ item.nombre }}
+            </option>
+            {% endfor %}
+            <option value="Otros" {% if empresa_sel=="Otros" %}selected{% endif %}>Otros</option>
+          </select>
+          <div id="empresa_otro_div" class="mt-3 fade-in-section" style="display:none;">
+            <label for="empresa_otro" class="form-label">Especifique la empresa</label>
+            <input type="text" class="form-control" id="empresa_otro" name="empresa_otro"
+              placeholder="Escriba el nombre de la empresa..." maxlength="200" value="{{ empresa_otro or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= GESTIONES ================= -->
+      {% if tipo in ['informes', 'actas', 'comisiones'] %}
+      <div class="premium-card fade-in-section">
+        <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>Gestiones</h5>
+        <div class="mb-4">
+          <!-- Se eliminó la etiqueta redundante ya que el título de la sección lo indica -->
+          <select class="form-select" id="gestiones" name="gestiones" required
+            style="max-width: 100%; text-overflow: ellipsis;">
+            <option value="" disabled {% if not gestiones_sel %}selected{% endif %}>-- Seleccione una gestión --
+            </option>
+            {% for item in gestiones %}
+            <option value="{{ item.valor or item.nombre }}" title="{{ item.nombre }}" {% if gestiones_sel==(item.valor
+              or item.nombre) %}selected{% endif %}>{{ item.nombre }}</option>
+            {% endfor %}
+          </select>
+
+          <div id="gestiones_otro_div" class="mt-3 fade-in-section" style="display:none;">
+            <label for="gestiones_otro" class="form-label">Especifique la gestión</label>
+            <input type="text" class="form-control" id="gestiones_otro" name="gestiones_otro"
+              placeholder="Escriba la gestión..." maxlength="200" value="{{ gestiones_otro or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= TIPO DE INFORME (HIERARCHICAL) ================= -->
+      {% if tipo == 'informes' %}
+      <div class="premium-card fade-in-section">
+        <h5 class="section-title"><i class="bi bi-diagram-3 me-2"></i>Tipo de Informe</h5>
+
+        <!-- Nivel 1 -->
+        <div class="mb-3">
+          <label for="tipo_informe_l1" class="form-label">Categoría Principal</label>
+          <select class="form-select" id="tipo_informe_l1" required>
+            <option value="">-- Seleccione --</option>
+            <!-- Opciones pobladas por JS -->
+          </select>
+        </div>
+
+        <!-- Nivel 2 -->
+        <div class="mb-3 fade-in-section" id="div_l2" style="display:none;">
+          <label for="tipo_informe_l2" class="form-label">Subcategoría</label>
+          <select class="form-select" id="tipo_informe_l2">
+            <option value="">-- Seleccione --</option>
+          </select>
+        </div>
+
+        <!-- Nivel 3 -->
+        <div class="mb-3 fade-in-section" id="div_l3" style="display:none;">
+          <label for="tipo_informe_l3" class="form-label">Detalle</label>
+          <select class="form-select" id="tipo_informe_l3">
+            <option value="">-- Seleccione --</option>
+          </select>
+        </div>
+
+        <!-- Texto Otro -->
+        <div id="tipo_informe_otro_div" class="mt-3 fade-in-section" style="display:none;">
+          <label for="tipo_informe_otro" class="form-label">Especifique el tipo de informe</label>
+          <input type="text" class="form-control" id="tipo_informe_otro" name="tipo_informe_otro"
+            placeholder="Escriba el tipo de informe..." maxlength="150" value="{{ tipo_informe_otro or '' }}">
+        </div>
+
+        <!-- SECCIÓN CASO FORTUITO (Activada por lógica dinámica) -->
+        <div id="bloque_caso_fortuito" class="p-4 rounded-3 border bg-light mt-4 fade-in-section"
+          style="display:none; border-left: 5px solid var(--primary-color) !important;">
+          <h5 class="text-primary mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Sección Caso Fortuito</h5>
+          <div class="mb-3">
+            <label for="caso_tipo" class="form-label">Elemento Afectado</label>
+            <select class="form-select" id="caso_tipo" name="caso_tipo">
+              <option value="">-- Seleccione --</option>
+              <option value="ALIMENTADOR" {% if caso_tipo=="ALIMENTADOR" %}selected{% endif %}>ALIMENTADOR</option>
+              <option value="LINEAS DE SUBTRANSMISION" {% if caso_tipo=="LINEAS DE SUBTRANSMISION" %}selected{% endif
+                %}>LINEAS DE SUBTRANSMISION</option>
+            </select>
+          </div>
+          <div id="bloque_alimentador" class="fade-in-section" style="display:none;">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="nombre_alimentador" class="form-label">Alimentador</label>
+                <input type="text" class="form-control" id="nombre_alimentador" name="nombre_alimentador"
+                  value="{{ nombre_alimentador or '' }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="alimentador_subestacion" class="form-label">Subestación</label>
+                <input type="text" class="form-control" id="alimentador_subestacion" name="alimentador_subestacion"
+                  value="{{ alimentador_subestacion or '' }}">
+              </div>
+            </div>
+          </div>
+          <div id="bloque_lineas" class="fade-in-section" style="display:none;">
+            <div class="mb-3">
+              <label for="linea_subtransmision_nombre" class="form-label">Nombre de Línea de Subtransmisión</label>
+              <input type="text" class="form-control" id="linea_subtransmision_nombre"
+                name="linea_subtransmision_nombre" value="{{ linea_subtransmision_nombre or '' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label for="fecha_interrupcion" class="form-label">Fecha de interrupción</label>
+              <input type="date" class="form-control" id="fecha_interrupcion" name="fecha_interrupcion"
+                value="{{ fecha_interrupcion or '' }}">
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {% endif %}
+
+      <!-- ================= PRODUCTOS ASOCIADOS ================= -->
+      <div class="premium-card fade-in-section">
+        <h5 class="section-title"><i class="bi bi-box-seam me-2"></i>Productos Asociados</h5>
+        <div class="mb-4">
+          <select class="form-select" id="productos_asociados" name="productos_asociados" required
+            style="max-width: 100%; text-overflow: ellipsis;">
+            <option value="" disabled {% if not productos_asociados_sel %}selected{% endif %}>-- Seleccione producto
+              asociado --</option>
+            {% for item in productos_asociados %}
+            <option value="{{ item.valor or item.nombre }}" title="{{ item.nombre }}" {% if
+              productos_asociados_sel==(item.valor or item.nombre) %}selected{% endif %}>{{ item.nombre }}</option>
+            {% endfor %}
+          </select>
+          <div id="productos_asociados_otro_div" class="mt-3 fade-in-section" style="display:none;">
+            <label for="productos_asociados_otro" class="form-label">Especifique el producto asociado</label>
+            <input type="text" class="form-control" id="productos_asociados_otro" name="productos_asociados_otro"
+              placeholder="Escriba el producto asociado..." maxlength="250"
+              value="{{ productos_asociados_otro or '' }}">
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ================= CAMPOS ESPECÍFICOS PARA REPORTES ================= -->
+      {% if tipo == 'reportes' %}
+
+      <!-- GESTIONES (Reportes) -->
+      <div class="premium-card fade-in-section">
+        <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>Gestiones</h5>
+        <div class="mb-4">
+          <select class="form-select" id="gestiones_reporte" name="gestiones_reporte" required
+            style="max-width: 100%; text-overflow: ellipsis;">
+            <option value="" disabled {% if not gestiones_sel %}selected{% endif %}>-- Seleccione una gestión --
+            </option>
+            {% for item in gestiones %}
+            <option value="{{ item.valor or item.nombre }}" title="{{ item.nombre }}" {% if gestiones_sel==(item.valor
+              or item.nombre) %}selected{% endif %}>{{ item.nombre }}</option>
+            {% endfor %}
+          </select>
+          <div id="gestiones_reporte_otro_div" class="mt-3 fade-in-section" style="display:none;">
+            <label for="gestiones_reporte_otro" class="form-label">Especifique la gestión</label>
+            <input type="text" class="form-control" id="gestiones_reporte_otro" name="gestiones_reporte_otro"
+              placeholder="Escriba la gestión..." maxlength="200" value="{{ gestiones_otro or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- TIPO DE REPORTE -->
+      <div class="premium-card fade-in-section">
+        <h5 class="section-title"><i class="bi bi-flag me-2"></i>Tipo de Reporte</h5>
+        <div class="mb-4">
+          <select class="form-select" id="tipo_reporte" name="tipo_reporte" required>
+            <option value="" disabled {% if not tipo_reporte_sel %}selected{% endif %}>-- Seleccione tipo de reporte --
+            </option>
+            {% for item in tipos_reporte %}
+            <option value="{{ item.valor or item.nombre }}" title="{{ item.nombre }}" {% if
+              tipo_reporte_sel==(item.valor or item.nombre) %}selected{% endif %}>{{ item.nombre }}</option>
+            {% endfor %}
+          </select>
+          <div id="tipo_reporte_otro_div" class="mt-3 fade-in-section" style="display:none;">
+            <label for="tipo_reporte_otro" class="form-label">Especifique el tipo de reporte</label>
+            <input type="text" class="form-control" id="tipo_reporte_otro" name="tipo_reporte_otro"
+              placeholder="Escriba el tipo de reporte..." maxlength="150" value="{{ tipo_reporte_otro or '' }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTOS ASOCIADOS (Reportes) -->
+      <div class="premium-card fade-in-section">
+        <h5 class="section-title"><i class="bi bi-box-seam me-2"></i>Productos Asociados</h5>
+        <div class="mb-4">
+          <select class="form-select" id="productos_asociados_reporte" name="productos_asociados_reporte" required
+            style="max-width: 100%; text-overflow: ellipsis;">
+            <option value="" disabled {% if not productos_asociados_sel %}selected{% endif %}>-- Seleccione
+              producto
+              asociado --</option>
+            {% for item in productos_asociados %}
+            <option value="{{ item.valor or item.nombre }}" title="{{ item.nombre }}" {% if
+              productos_asociados_sel==(item.valor or item.nombre) %}selected{% endif %}>{{ item.nombre }}
+            </option>
+            {% endfor %}
+          </select>
+          <div id="productos_asociados_reporte_otro_div" class="mt-3 fade-in-section" style="display:none;">
+            <label for="productos_asociados_reporte_otro" class="form-label">Especifique el producto asociado</label>
+            <input type="text" class="form-control" id="productos_asociados_reporte_otro"
+              name="productos_asociados_reporte_otro" placeholder="Escriba el producto asociado..." maxlength="250"
+              value="{{ productos_asociados_otro or '' }}">
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ================= ASUNTO & OBSERVACIONES ================= -->
+      <div class="premium-card">
+        <h5 class="section-title"><i class="bi bi-file-text me-2"></i>Contenido del Documento</h5>
+        <div class="mb-4">
+          <label for="asunto" class="form-label">Asunto</label>
+          <input type="text" class="form-control" id="asunto" name="asunto" required value="{{ asunto or '' }}"
+            placeholder="Ingrese el asunto principal">
+        </div>
+        <div class="mb-3">
+          <label for="observaciones" class="form-label">Observaciones</label>
+          <textarea class="form-control" id="observaciones" name="observaciones" rows="5"
+            placeholder="Detalles adicionales...">{{ observaciones or '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- ================= BOTÓN ================= -->
+      <div class="d-grid mb-5">
+        <button type="submit" class="btn btn-primary btn-lg shadow">
+          <i class="bi bi-save me-2"></i> Guardar Documento
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% if tipo == 'informes' %}
+<script type="application/json" id="report-types-data">
+    {{ report_types_json | default([]) | tojson }}
+  </script>
+<script type="application/json" id="tipo-informe-sel">
+      {{ tipo_informe_sel | default('') | tojson }}
+  </script>
+
+<script>
+  // ============================================
+  // DEFINICIÓN DE DATOS DE JERARQUÍA
+  // ============================================
+  const reportTypes = JSON.parse(document.getElementById('report-types-data').textContent);
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // === ELEMENTOS DOM ===
+    const form = document.getElementById("mainForm");
+    const hiddenFinal = document.getElementById("final_tipo_informe");
+
+    const sl1 = document.getElementById("tipo_informe_l1");
+    const sl2 = document.getElementById("tipo_informe_l2");
+    const divL2 = document.getElementById("div_l2");
+    const sl3 = document.getElementById("tipo_informe_l3");
+    const divL3 = document.getElementById("div_l3");
+
+    const empresa = document.getElementById("empresa");
+    const empresaOtroDiv = document.getElementById("empresa_otro_div");
+    const empresaOtroInput = document.getElementById("empresa_otro");
+
+    // ... (rest of definitions) ...
+
+    // === PRE-SELECCIÓN EN MODO EDICIÓN ===
+    function preSelectHierarchy() {
+      const selectedValue = JSON.parse(document.getElementById('tipo-informe-sel')?.textContent || '""');
+      if (!selectedValue) return;
+
+      console.log("Pre-selecting:", selectedValue);
+      // Format is "V1" or "V1 - V2" or "V1 - V2 - V3"
+      // We need to find the INDICES.
+      // It's tricky because values might not be unique globally, but are unique in path?
+      // Let's search tree.
+
+      const parts = selectedValue.split(' - ');
+      if (parts.length === 0) return;
+
+      // Level 1
+      let idx1 = -1;
+      reportTypes.forEach((item, i) => {
+        if (item.label === parts[0] || item.value === parts[0]) idx1 = i;
+        // The value usually matches the label or value field. 
+        // In SQL migration I used name=valor usually.
+      });
+
+      if (idx1 !== -1) {
+        sl1.value = idx1;
+        updateLevels(); // Trigger L1 change logic
+
+        // Level 2
+        if (parts.length > 1 && sl2 && divL2.style.display !== 'none') {
+          // Wait, updateLevels handles display.
+          // We need to find L2 index
+          const data1 = reportTypes[idx1];
+          let idx2 = -1;
+          if (data1.children) {
+            data1.children.forEach((item, i) => {
+              if (item.label === parts[1] || item.value === parts[1]) idx2 = i;
+            });
+          }
+
+          if (idx2 !== -1) {
+            sl2.value = idx2;
+            updateLevel3(); // Trigger L2 change logic
+
+            // Level 3
+            if (parts.length > 2 && sl3 && divL3.style.display !== 'none') {
+              const data2 = data1.children[idx2];
+              let idx3 = -1;
+              if (data2.children) {
+                data2.children.forEach((item, i) => {
+                  if (item.label === parts[2] || item.value === parts[2]) idx3 = i;
+                });
+              }
+              if (idx3 !== -1) {
+                sl3.value = idx3;
+                updateHiddenValue();
+              }
+            }
+          }
+        }
+        // If "Otros" or "Caso Fortuito" triggered, we should verify fields are populated?
+        // "Otros" input uses `tipo_informe_otro`. The render_template does NOT populate it specifically?
+        // Actually, in app.py I didn't see `tipo_informe_otro` passed explicitly?
+        // I passed `tipo_informe_sel`. If it was "Otros", the user wrote in the text box?
+        // IF special=Otros, the value saved in DB is what?
+        // Ah, if specialized, `final_tipo_informe` receives the TEXT.
+        // But if `special=OTROS`, `sl1` matches "Otros". But `hiddenFinal` had the text?
+        // No, my JS currently: `hiddenFinal.value = finalStr;`
+        // If "Otros", `finalStr` is "Otros". The text input is SEPARATE?
+        // Let's check `formulario.html` form submission.
+        // It sends `tipo_informe` (hiddenFinal).
+        // AND `tipo_informe_otro` (input).
+        // In backend `crear`:
+
+
+        // So DB has the CUSTOM TEXT.
+        // If DB has custom text, then `selectedValue` is custom text.
+        // So `idx1` search will FAIL if it's custom text!
+        // Correct.
+        // So if `idx1` not found, maybe it's "Otros"?
+        // We should search for "Otros" special flag item.
+      }
+
+      // Fallback or "Otros" detection
+      if (idx1 === -1) {
+        // Check if there is an "Otros" item
+        reportTypes.forEach((item, i) => {
+          if (item.special === 'OTROS') {
+            // This is 'Others'. The DB Value is likely unrelated to the Label 'Otros'.
+            // If DB value is NOT in the list, it must be 'Otros' (custom).
+            // So select this.
+            sl1.value = i;
+            updateLevels();
+            // And populate the text input
+            if (document.getElementById("tipo_informe_otro")) {
+              document.getElementById("tipo_informe_otro").value = selectedValue;
+            }
+          }
+        });
+      }
+    }
+
+    // ...
+
+    // Call it at end of DOMContentLoaded
+    // Since I inserted code in `DOMContentLoaded` wrapper, I can just call it.
+    // But `DOMContentLoaded` function body is where I am inside?
+    // I will replace `document.addEventListener...` logic if needed or just append function and call.
+
+    // Actually, I can just call this function inside the existing `DOMContentLoaded` listener.
+    // I need to locate where to insert.
+
+
+    const divOtro = document.getElementById("tipo_informe_otro_div");
+    const inputOtro = document.getElementById("tipo_informe_otro");
+
+    const bloqueCaso = document.getElementById("bloque_caso_fortuito");
+    // ... other elements like gestiones, products same as before ...
+
+    const gestiones = document.getElementById("gestiones");
+    const gestionesOtroDiv = document.getElementById("gestiones_otro_div");
+    const gestionesOtroInput = document.getElementById("gestiones_otro");
+
+    const productos = document.getElementById("productos_asociados");
+    const productosOtroDiv = document.getElementById("productos_asociados_otro_div");
+    const productosOtroInput = document.getElementById("productos_asociados_otro");
+
+    // Caso Fortuito Inputs
+    const casoTipo = document.getElementById("caso_tipo");
+    const bloqueAlimentador = document.getElementById("bloque_alimentador");
+    const bloqueLineas = document.getElementById("bloque_lineas");
+    const alimentadorSubestacion = document.getElementById("alimentador_subestacion");
+    const nombreAlimentador = document.getElementById("nombre_alimentador");
+    const lineaNombre = document.getElementById("linea_subtransmision_nombre");
+    const fechaInterrupcion = document.getElementById("fecha_interrupcion");
+
+    // === INICIALIZAR DESPLEGABLE L1 ===
+    reportTypes.forEach((item, idx) => {
+      const opt = document.createElement("option");
+      opt.value = idx; // Use index to reference object
+      opt.textContent = item.label;
+      sl1.appendChild(opt);
+    });
+
+    // === LÓGICA DE JERARQUÍA ===
+    function updateLevels() {
+      const i1 = sl1.value;
+
+      // Reset Lower Levels
+      sl2.innerHTML = '<option value="">-- Seleccione --</option>';
+      divL2.style.display = "none";
+      sl3.innerHTML = '<option value="">-- Seleccione --</option>';
+      divL3.style.display = "none";
+
+      // Reset Specials
+      divOtro.style.display = "none";
+      inputOtro.required = false;
+      bloqueCaso.style.display = "none";
+      setRequiredCaso(false);
+
+      if (i1 === "") {
+        updateHiddenValue();
+        return;
+      }
+
+      const data1 = reportTypes[i1];
+
+      // Verificar banderas especiales
+      if (data1.special === "OTROS") {
+        divOtro.style.display = "block";
+        inputOtro.required = true;
+      } else if (data1.special === "CASO_FORTUITO") {
+        bloqueCaso.style.display = "block";
+        setRequiredCaso(true);
+      }
+
+      // Verificar hijos (Nivel 2)
+      if (data1.children && data1.children.length > 0) {
+        divL2.style.display = "block";
+        sl2.required = true;
+        data1.children.forEach((item, idx) => {
+          const opt = document.createElement("option");
+          opt.value = idx;
+          opt.textContent = item.label;
+          sl2.appendChild(opt);
+        });
+      } else {
+        sl2.required = false;
+      }
+      updateHiddenValue();
+    }
+
+    function updateLevel3() {
+      const i1 = sl1.value;
+      const i2 = sl2.value;
+
+      // Reset Level 3
+      sl3.innerHTML = '<option value="">-- Seleccione --</option>';
+      divL3.style.display = "none";
+
+      if (i1 === "" || i2 === "") {
+        updateHiddenValue();
+        return;
+      }
+
+      const data1 = reportTypes[i1];
+      if (!data1.children || !data1.children[i2]) return;
+
+      const data2 = data1.children[i2];
+
+      if (data2.children && data2.children.length > 0) {
+        divL3.style.display = "block";
+        sl3.required = true;
+        data2.children.forEach((item, idx) => {
+          const opt = document.createElement("option");
+          opt.value = idx;
+          opt.textContent = item.label;
+          sl3.appendChild(opt);
+        });
+      } else {
+        sl3.required = false;
+      }
+      updateHiddenValue();
+    }
+
+    // === ACTUALIZACIÓN DE VALOR EN TIEMPO REAL ===
+    function updateHiddenValue() {
+      if (sl1.value === "") {
+        hiddenFinal.value = "";
+        return;
+      }
+
+      const idx1 = sl1.value;
+      const item1 = reportTypes[idx1];
+      let finalStr = item1.value;
+
+      // Nivel 2
+      if (divL2.style.display !== "none" && sl2.value !== "") {
+        const item2 = item1.children[sl2.value];
+        finalStr += " - " + item2.value;
+
+        // Nivel 3
+        if (divL3.style.display !== "none" && sl3.value !== "") {
+          const item3 = item2.children[sl3.value];
+          finalStr += " - " + item3.value;
+        }
+      }
+      hiddenFinal.value = finalStr;
+      console.log("Selected Type:", finalStr); // Debug
+    }
+
+    // === LISTENERS ===
+    sl1.addEventListener("change", updateLevels);
+    sl2.addEventListener("change", updateLevel3);
+    sl3.addEventListener("change", updateHiddenValue);
+
+    // === AYUDAS para Otros/Caso ===
+    function setRequiredCaso(req) {
+      const els = [casoTipo, fechaInterrupcion];
+      els.forEach(el => { if (el) el.required = req; });
+      // Sub-fields depend on selection, handled by `handleCasoTipo`
+    }
+
+    function handleCasoTipo() {
+      if (!bloqueAlimentador) return;
+      bloqueAlimentador.style.display = "none";
+      bloqueLineas.style.display = "none";
+      if (lineaNombre) lineaNombre.required = false;
+      if (nombreAlimentador) nombreAlimentador.required = false;
+      if (alimentadorSubestacion) alimentadorSubestacion.required = false;
+
+      if (casoTipo.value === "ALIMENTADOR") {
+        bloqueAlimentador.style.display = "block";
+        if (nombreAlimentador) nombreAlimentador.required = true;
+        if (alimentadorSubestacion) alimentadorSubestacion.required = true;
+        // Limpiar el otro bloque
+        if (lineaNombre) lineaNombre.value = "";
+      } else if (casoTipo.value === "LINEAS DE SUBTRANSMISION") {
+        bloqueLineas.style.display = "block";
+        if (lineaNombre) lineaNombre.required = true;
+        // Limpiar el otro bloque
+        if (nombreAlimentador) nombreAlimentador.value = "";
+        if (alimentadorSubestacion) alimentadorSubestacion.value = "";
+      }
+    }
+
+    function toggleOtherInput(select, div, inp) {
+      if (!select || !div) return;
+      const isOther = select.value.toLowerCase() === "otros";
+      div.style.display = isOther ? "block" : "none";
+      if (inp) {
+        inp.required = isOther;
+        if (!isOther) inp.value = "";
+      }
+    }
+
+    // Manejadores estándar "Otros" para Gestiones/Productos
+    gestiones.addEventListener("change", () => toggleOtherInput(gestiones, gestionesOtroDiv, gestionesOtroInput));
+    productos.addEventListener("change", () => toggleOtherInput(productos, productosOtroDiv, productosOtroInput));
+    empresa.addEventListener("change", () => toggleOtherInput(empresa, empresaOtroDiv, empresaOtroInput));
+    casoTipo.addEventListener("change", handleCasoTipo);
+
+    // Initialize checks
+    handleCasoTipo();
+    toggleOtherInput(gestiones, gestionesOtroDiv, gestionesOtroInput);
+    toggleOtherInput(productos, productosOtroDiv, productosOtroInput);
+    toggleOtherInput(empresa, empresaOtroDiv, empresaOtroInput);
+
+    // Attempt to pre-select hierarchy (for edit mode)
+    preSelectHierarchy();
+  });
+</script>
+{% endif %}
+
+
+
+{% if tipo == 'reportes' %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const gestiones = document.getElementById("gestiones_reporte");
+    const gestionesOtroDiv = document.getElementById("gestiones_reporte_otro_div");
+    const gestionesOtroInput = document.getElementById("gestiones_reporte_otro");
+
+    const tipoReporte = document.getElementById("tipo_reporte");
+    const tipoReporteOtroDiv = document.getElementById("tipo_reporte_otro_div");
+    const tipoReporteOtroInput = document.getElementById("tipo_reporte_otro");
+
+    const productos = document.getElementById("productos_asociados_reporte");
+    const productosOtroDiv = document.getElementById("productos_asociados_reporte_otro_div");
+    const productosOtroInput = document.getElementById("productos_asociados_reporte_otro");
+
+    const empresa = document.getElementById("empresa");
+    const empresaOtroDiv = document.getElementById("empresa_otro_div");
+    const empresaOtroInput = document.getElementById("empresa_otro");
+
+    function toggleOtherInput(select, div, inp) {
+      if (!select || !div) return;
+      const isOther = select.value === "Otros";
+      div.style.display = isOther ? "block" : "none";
+      if (inp) {
+        inp.required = isOther;
+        if (!isOther) inp.value = "";
+      }
+    }
+
+    if (gestiones) {
+      gestiones.addEventListener("change", () => toggleOtherInput(gestiones, gestionesOtroDiv, gestionesOtroInput));
+      toggleOtherInput(gestiones, gestionesOtroDiv, gestionesOtroInput);
+    }
+
+    if (tipoReporte) {
+      tipoReporte.addEventListener("change", () => toggleOtherInput(tipoReporte, tipoReporteOtroDiv, tipoReporteOtroInput));
+      toggleOtherInput(tipoReporte, tipoReporteOtroDiv, tipoReporteOtroInput);
+    }
+
+    if (productos) {
+      productos.addEventListener("change", () => toggleOtherInput(productos, productosOtroDiv, productosOtroInput));
+      toggleOtherInput(productos, productosOtroDiv, productosOtroInput);
+    }
+
+    if (empresa) {
+      empresa.addEventListener("change", () => toggleOtherInput(empresa, empresaOtroDiv, empresaOtroInput));
+      toggleOtherInput(empresa, empresaOtroDiv, empresaOtroInput);
+    }
+  });
+</script>
+{% endif %}
+
+
+{% if tipo in ['actas', 'comisiones'] %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const gestiones = document.getElementById("gestiones");
+    const gestionesOtroDiv = document.getElementById("gestiones_otro_div");
+    const gestionesOtroInput = document.getElementById("gestiones_otro");
+
+    const productos = document.getElementById("productos_asociados");
+    const productosOtroDiv = document.getElementById("productos_asociados_otro_div");
+    const productosOtroInput = document.getElementById("productos_asociados_otro");
+
+    const empresa = document.getElementById("empresa");
+    const empresaOtroDiv = document.getElementById("empresa_otro_div");
+    const empresaOtroInput = document.getElementById("empresa_otro");
+
+    function toggleOtherInput(select, div, inp) {
+      if (!select || !div) return;
+      const isOther = select.value === "Otros";
+      div.style.display = isOther ? "block" : "none";
+      if (inp) {
+        inp.required = isOther;
+        if (!isOther) inp.value = "";
+      }
+    }
+
+    if (gestiones) {
+      gestiones.addEventListener("change", () => toggleOtherInput(gestiones, gestionesOtroDiv, gestionesOtroInput));
+      toggleOtherInput(gestiones, gestionesOtroDiv, gestionesOtroInput);
+    }
+
+    if (productos) {
+      productos.addEventListener("change", () => toggleOtherInput(productos, productosOtroDiv, productosOtroInput));
+      toggleOtherInput(productos, productosOtroDiv, productosOtroInput);
+    }
+
+    if (empresa) {
+      empresa.addEventListener("change", () => toggleOtherInput(empresa, empresaOtroDiv, empresaOtroInput));
+      toggleOtherInput(empresa, empresaOtroDiv, empresaOtroInput);
+    }
+  });
+</script>
+{% endif %}
+
 {% endblock %}
