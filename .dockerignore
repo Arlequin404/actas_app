@@ -1,11 +1,6 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.env
 .git
-.gitignore
-.vscode
-.idea
-*.log
-node_modules
+.env
+__pycache__
+*.pyc
+*.zip
+*.tar.gz

@@ -1,0 +1,21 @@
+name: Pruebas completas
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ejecutar suite completa
+        run: bash scripts/test_all.sh
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-pruebas
+          path: test-artifacts/
+          if-no-files-found: warn

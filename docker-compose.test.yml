@@ -1,0 +1,60 @@
+services:
+  notification-service:
+    environment:
+      SMTP_SERVER: mailpit
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      SMTP_TLS: "false"
+      SMTP_FROM: "ARCONEL Pruebas <no-reply@test.local>"
+      EMAIL_NOTIFICATIONS_ENABLED: "true"
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-18025}:8025"
+    networks: [backend]
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    environment:
+      BASE_URL: http://web-gateway:8000
+      AUTH_URL: http://auth-service:8000
+      DOCUMENT_URL: http://document-service:8000
+      CATALOG_URL: http://catalog-service:8000
+      BACKUP_URL: http://backup-service:8000
+      NOTIFICATION_URL: http://notification-service:8000
+      MAILPIT_URL: http://mailpit:8025
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      AUTH_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/auth_db
+      DOCUMENT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/documents_db
+      CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/catalog_db
+      NOTIFICATION_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/notifications_db
+      DATABASE_URL: postgresql://unused:unused@localhost/unused
+      SECRET_KEY: ${SECRET_KEY}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      MIN_PASSWORD_LENGTH: 6
+      EMAIL_NOTIFICATIONS_ENABLED: "false"
+    volumes:
+      - ./test-artifacts:/workspace/test-artifacts
+    depends_on:
+      web-gateway:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks: [backend]
+    profiles: [tests]
+
+# Volúmenes físicos exclusivos para pruebas. Nunca comparten datos con producción.
+volumes:
+  pgdata:
+    name: actas_tests_pgdata
+  pgadmin:
+    name: actas_tests_pgadmin

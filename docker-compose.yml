@@ -1,50 +1,278 @@
+name: actas_microservices
+
 services:
   db:
     image: postgres:16
-    container_name: actas_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-actas_db}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       TZ: ${TZ:-America/Guayaquil}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d:Z
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-actas_db} -h 127.0.0.1 || exit 1" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [backend]
+
+
+  db-init:
+    image: postgres:16
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db: { condition: service_healthy }
+    command:
+      - sh
+      - -ec
+      - |
+        for database in auth_db documents_db catalog_db notifications_db; do
+          exists="$$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$$database'")"
+          if [ "$$exists" != "1" ]; then
+            echo "Creando base $$database..."
+            createdb "$$database"
+          else
+            echo "Base $$database disponible."
+          fi
+        done
+    restart: "no"
+    networks: [backend]
+
+  auth-service:
+    build:
+      context: .
+      args: { SERVICE: auth_service }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/auth_db
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      ADMIN_NAME: ${ADMIN_NAME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MIN_PASSWORD_LENGTH: ${MIN_PASSWORD_LENGTH:-6}
+      SMTP_SERVER: ${SMTP_SERVER:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_TLS: ${SMTP_TLS:-true}
+      SMTP_FROM: ${SMTP_FROM:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+    command: ["sh", "-c", "python -c 'from app import init_db; init_db()' && exec gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 app:app"]
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+      notification-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks: [backend]
 
-  web:
-    build: .
-    container_name: actas_web
+  notification-service:
+    build:
+      context: .
+      args: { SERVICE: notification_service }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/notifications_db
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      SMTP_SERVER: ${SMTP_SERVER:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_TLS: ${SMTP_TLS:-true}
+      SMTP_FROM: ${SMTP_FROM:-}
+      EMAIL_NOTIFICATIONS_ENABLED: ${EMAIL_NOTIFICATIONS_ENABLED:-true}
+      SYSTEM_NAME: "${SYSTEM_NAME:-ARCONEL - Control de Documentos}"
+    command: ["sh", "-c", "python -c 'from app import init_db; init_db()' && exec gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 app:app"]
     depends_on:
-      db:
-        condition: service_healthy
-    env_file:
-      - .env
-    ports:
-      - "127.0.0.1:8080:8000"
+      db-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
+    networks: [backend]
+
+  document-service:
+    build:
+      context: .
+      args: { SERVICE: document_service }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/documents_db
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      TZ: ${TZ:-America/Guayaquil}
+      AUTH_SERVICE_URL: http://auth-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+      CATALOG_SERVICE_URL: http://catalog-service:8000
+    command: ["sh", "-c", "python -c 'from app import init_db; init_db()' && exec gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 app:app"]
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+      auth-service: { condition: service_healthy }
+      catalog-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [backend]
+
+  catalog-service:
+    build:
+      context: .
+      args: { SERVICE: catalog_service }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/catalog_db
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    command: ["sh", "-c", "python -c 'from app import init_db; init_db()' && exec gunicorn --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 app:app"]
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [backend]
+
+  backup-service:
+    build:
+      context: .
+      dockerfile: services/backup_service/Dockerfile
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_DATABASES: auth_db,documents_db,catalog_db,notifications_db
+      MAX_BACKUP_UPLOAD_BYTES: ${MAX_BACKUP_UPLOAD_BYTES:-104857600}
+      MAX_BACKUP_EXTRACTED_BYTES: ${MAX_BACKUP_EXTRACTED_BYTES:-524288000}
+      AUTO_BACKUP_ENABLED: ${AUTO_BACKUP_ENABLED:-false}
+      AUTO_BACKUP_TIME: ${AUTO_BACKUP_TIME:-02:00}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      GOOGLE_DRIVE_CLIENT_ID: ${GOOGLE_DRIVE_CLIENT_ID:-}
+      GOOGLE_DRIVE_CLIENT_SECRET: ${GOOGLE_DRIVE_CLIENT_SECRET:-}
+      GOOGLE_DRIVE_FOLDER_PATH: ${GOOGLE_DRIVE_FOLDER_PATH:-ARCONEL Respaldos/Actas}
+      GOOGLE_DRIVE_TOKEN_FILE: /backup-state/google-drive-token.json
+      GOOGLE_DRIVE_META_FILE: /backup-state/google-drive-meta.json
+      GOOGLE_DRIVE_OAUTH_STATE_FILE: /backup-state/google-drive-oauth-state.json
+      BACKUP_STATUS_FILE: /backup-state/status.json
+      BACKUP_LOCK_FILE: /backup-state/backup.lock
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+    volumes:
+      - backup_state:/backup-state
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+      notification-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [backend]
+
+  backup-scheduler:
+    build:
+      context: .
+      dockerfile: services/backup_service/Dockerfile
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      BACKUP_SERVICE_URL: http://backup-service:8000
+      AUTO_BACKUP_ENABLED: ${AUTO_BACKUP_ENABLED:-false}
+      AUTO_BACKUP_TIME: ${AUTO_BACKUP_TIME:-02:00}
+      TZ: ${TZ:-America/Guayaquil}
+      BACKUP_SCHEDULER_STATUS_FILE: /backup-state/scheduler.json
+      BACKUP_SCHEDULER_POLL_SECONDS: ${BACKUP_SCHEDULER_POLL_SECONDS:-30}
+    command: ["python", "scheduler.py"]
+    volumes:
+      - backup_state:/backup-state
+    depends_on:
+      backup-service: { condition: service_healthy }
+    restart: unless-stopped
+    networks: [backend]
+
+  web-gateway:
+    build:
+      context: .
+      args: { SERVICE: web_gateway }
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      MAX_UPLOAD_BYTES: ${MAX_BACKUP_UPLOAD_BYTES:-104857600}
+      AUTH_SERVICE_URL: http://auth-service:8000
+      DOCUMENT_SERVICE_URL: http://document-service:8000
+      CATALOG_SERVICE_URL: http://catalog-service:8000
+      BACKUP_SERVICE_URL: http://backup-service:8000
+      NOTIFICATION_SERVICE_URL: http://notification-service:8000
+    depends_on:
+      auth-service: { condition: service_healthy }
+      document-service: { condition: service_healthy }
+      catalog-service: { condition: service_healthy }
+      backup-service: { condition: service_healthy }
+      notification-service: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 8s
+      retries: 10
+    restart: unless-stopped
+    networks: [backend]
+
+  migration-tool:
+    build:
+      context: .
+      args: { SERVICE: migration_tool }
+    profiles: [migration]
+    environment:
+      OLD_DATABASE_URL: ${OLD_DATABASE_URL:-}
+      AUTH_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/auth_db
+      DOCUMENT_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/documents_db
+      CATALOG_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/catalog_db
+    depends_on:
+      auth-service: { condition: service_healthy }
+      document-service: { condition: service_healthy }
+      catalog-service: { condition: service_healthy }
+    command: ["python", "migrate.py", "--help"]
+    networks: [backend]
 
   pgadmin:
-    image: dpage/pgadmin4:8.11
-    container_name: actas_pgadmin
-    depends_on:
-      db:
-        condition: service_healthy
+    image: dpage/pgadmin4:8.14
+    profiles: [tools]
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
-      TZ: ${TZ:-America/Guayaquil}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - "127.0.0.1:5050:80"
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
     volumes:
       - pgadmin:/var/lib/pgadmin
+    depends_on:
+      db: { condition: service_healthy }
     restart: unless-stopped
+    networks: [backend]
 
 volumes:
+  backup_state:
   pgdata:
+    name: actas_microservices_pgdata
   pgadmin:
+    name: actas_microservices_pgadmin
+
+networks:
+  backend:
+    internal: false

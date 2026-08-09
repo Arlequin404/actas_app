@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+      <span class="badge rounded-pill text-bg-primary-subtle text-primary mb-2"><i class="bi bi-journal-text me-2"></i>Solo administradores</span>
+      <h1 class="h2 fw-bold mb-1">Logs y reportes del sistema</h1>
+      <p class="text-muted mb-0">Actividad de usuarios, documentos, respaldos y eventos relevantes del sistema.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-success" href="{{ url_for('descargar_admin_logs') }}"><i class="bi bi-file-earmark-excel-fill me-2"></i>Descargar Excel</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('admin_home') }}"><i class="bi bi-gear-fill me-2"></i>Configuración</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Eventos totales</div><div class="fs-2 fw-bold">{{ summary.get('total', 0) }}</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Advertencias</div><div class="fs-2 fw-bold text-warning">{{ summary.get('warnings', 0) }}</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Errores</div><div class="fs-2 fw-bold text-danger">{{ summary.get('errors', 0) }}</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm"><div class="card-body"><div class="text-muted small">Respaldos</div><div class="fs-2 fw-bold text-primary">{{ summary.get('backups', 0) }}</div></div></div></div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form class="row g-2" method="get">
+        <div class="col-md-4"><input class="form-control" name="q" value="{{ q }}" placeholder="Buscar evento, usuario o detalle"></div>
+        <div class="col-md-2"><select class="form-select" name="level"><option value="">Todos los niveles</option>{% for value,label in [('info','Información'),('warning','Advertencia'),('error','Error')] %}<option value="{{ value }}" {% if level==value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-3"><select class="form-select" name="module"><option value="">Todos los módulos</option>{% for item in modules %}<option value="{{ item }}" {% if module==item %}selected{% endif %}>{{ item|capitalize }}</option>{% endfor %}</select></div>
+        <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary flex-grow-1"><i class="bi bi-search me-1"></i>Filtrar</button><a class="btn btn-outline-secondary" href="{{ url_for('admin_logs') }}">Limpiar</a></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-0 pt-4 px-4"><div class="d-flex justify-content-between"><h2 class="h5 fw-bold mb-0">Registro de actividad</h2><span class="text-muted small">{{ total }} resultado(s)</span></div></div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th class="ps-4">Fecha</th><th>Nivel</th><th>Módulo</th><th>Evento</th><th>Usuario</th><th>Detalle</th></tr></thead>
+        <tbody>
+        {% for item in logs %}
+          <tr>
+            <td class="ps-4 text-nowrap small">{{ item.created_at }}</td>
+            <td>{% if item.level=='error' %}<span class="badge text-bg-danger">Error</span>{% elif item.level=='warning' %}<span class="badge text-bg-warning">Advertencia</span>{% else %}<span class="badge text-bg-info">Info</span>{% endif %}</td>
+            <td>{{ item.module }}</td><td class="fw-semibold">{{ item.event_type }}</td>
+            <td><div>{{ item.actor_name or 'Sistema' }}</div><div class="small text-muted">{{ item.actor_role or '—' }}</div></td>
+            <td class="small"><code class="text-wrap">{{ item.detail }}</code></td>
+          </tr>
+        {% else %}<tr><td colspan="6" class="text-center text-muted py-5">No existen eventos con estos filtros.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

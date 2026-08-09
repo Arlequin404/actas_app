@@ -1,0 +1,13 @@
+Flask==3.0.3
+Werkzeug==3.0.3
+psycopg2-binary==2.9.9
+openpyxl==3.1.5
+requests==2.32.3
+pytest==8.3.4
+Jinja2==3.1.5
+PyYAML==6.0.2
+playwright==1.49.1
+pytest-playwright==0.6.2
+pytest-html==4.1.1
+pytest-timeout==2.3.1
+beautifulsoup4==4.12.3

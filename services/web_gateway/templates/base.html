@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>ARCONEL</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+
+  <style>
+    .toast-bottom {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #212529;
+      color: white;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 600px;
+      z-index: 1050;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+
+  <script>
+    window.onload = function () {
+      const toast = document.querySelector('.toast-bottom');
+      if (toast) {
+        setTimeout(() => toast.remove(), 10000);
+      }
+    };
+  </script>
+</head>
+
+<script>
+  // Verificar el almacenamiento local para la preferencia del tema
+  (function () {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark-mode');
+      document.documentElement.setAttribute('data-bs-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-bs-theme', 'light');
+    }
+  })();
+</script>
+
+
+<body class="app-shell">
+
+  <div id="appSplash" class="app-splash" aria-hidden="true">
+    <div class="app-splash__backdrop"></div>
+    <div class="app-splash__content">
+      <div class="app-splash__brand">
+        <span class="app-splash__logo"><i class="bi bi-lightning-charge-fill"></i></span>
+        <div>
+          <strong>ARCONEL</strong>
+          <small>Sistema de Control Documental</small>
+        </div>
+      </div>
+      <div class="app-splash__loader">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="app-splash__text">Cargando información y preparando la interfaz…</p>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-expand-lg navbar-dark px-4 mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/dashboard">
+        <i class="bi bi-lightning-charge-fill text-warning fs-3"></i>
+        <div class="d-flex flex-column">
+          <span class="fs-5 fw-bold" style="letter-spacing: 2px;">ARCONEL</span>
+          <span class="fs-7 text-white-50" style="font-size: 0.75rem; letter-spacing: 1px;">CONTROL DE DOCUMENTOS</span>
+        </div>
+      </a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navContent">
+        <div class="navbar-nav ms-auto align-items-center gap-3">
+          {% if session.get('rol') in ['usuario', 'admin'] %}
+          <a class="nav-link nav-create-primary" href="{{ url_for('crear_selector') }}"><i class="bi bi-plus-circle-fill me-1"></i>Nuevo documento</a>
+          <a class="nav-link" href="{{ url_for('mis_documentos') }}"><i class="bi bi-folder2-open me-1"></i>Documentos</a>
+          {% endif %}
+
+          {% if session.get('rol') == 'admin' %}
+          <div class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="bi bi-speedometer2 me-1"></i>Administración
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 260px;">
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Dashboard</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_home') }}"><i class="bi bi-grid-1x2-fill me-2 text-primary"></i>Centro de administración</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_users') }}"><i class="bi bi-people-fill me-2"></i>Usuarios y permisos</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_documentos') }}"><i class="bi bi-folder2-open me-2"></i>Documentos</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_empresas') }}"><i class="bi bi-buildings me-2"></i>Empresas</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_campos') }}"><i class="bi bi-layout-text-window-reverse me-2"></i>Editor visual de formularios</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_notificaciones') }}"><i class="bi bi-envelope-check me-2"></i>Notificaciones</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_logs') }}"><i class="bi bi-journal-text me-2"></i>Logs y reportes</a></li>
+              <li><a class="dropdown-item py-2" href="{{ url_for('admin_respaldo') }}"><i class="bi bi-database-fill-gear me-2"></i>Respaldos</a></li>
+            </ul>
+          </div>
+          {% endif %}
+
+          <div class="d-flex align-items-center ms-3 border-start ps-3 border-secondary">
+            {% if session.get('nombre') %}
+            <span class="text-white me-3 fw-light">Hola, <span class="fw-bold text-warning">{{ session['nombre'].split()[0] }}</span></span>
+            <form method="post" action="/logout" class="d-inline m-0">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-outline-light btn-sm rounded-pill px-3" type="submit">Salir</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-sm rounded-pill px-3">Ingresar</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  {% block container_start %}
+  <main class="container mt-4">
+    {% endblock %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    {% if category == 'toast' %}
+    <div class="toast-bottom">{{ message }}</div>
+    {% else %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endif %}
+    {% endfor %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Botón de cambio de tema -->
+  <button id="themeToggle" class="btn btn-primary rounded-circle shadow-lg position-fixed"
+    style="bottom: 20px; left: 20px; z-index: 1060; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+    <i class="bi bi-moon-fill" id="themeIcon"></i>
+  </button>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggleBtn = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeIcon');
+      const html = document.documentElement;
+      const splash = document.getElementById('appSplash');
+
+      function hideSplash() {
+        if (!splash) return;
+        splash.classList.add('is-hidden');
+        setTimeout(() => splash.remove(), 450);
+      }
+
+      // Actualizar el icono según el estado actual
+      function updateIcon() {
+        if (html.classList.contains('dark-mode')) {
+          icon.classList.remove('bi-moon-fill');
+          icon.classList.add('bi-sun-fill');
+        } else {
+          icon.classList.remove('bi-sun-fill');
+          icon.classList.add('bi-moon-fill');
+        }
+      }
+      updateIcon();
+
+      toggleBtn.addEventListener('click', function () {
+        html.classList.toggle('dark-mode');
+        html.setAttribute('data-bs-theme', html.classList.contains('dark-mode') ? 'dark' : 'light');
+
+        if (html.classList.contains('dark-mode')) {
+          localStorage.setItem('theme', 'dark');
+        } else {
+          localStorage.setItem('theme', 'light');
+        }
+
+        updateIcon();
+      });
+
+      document.querySelectorAll('a[href]').forEach(link => {
+        link.addEventListener('click', function (event) {
+          const href = this.getAttribute('href') || '';
+          const isInternal = href.startsWith('/') || href.startsWith(window.location.origin);
+          const opensNewTab = this.getAttribute('target') === '_blank';
+          const isAnchorOnly = href.startsWith('#');
+          if (isInternal && !opensNewTab && !isAnchorOnly && splash) {
+            splash.classList.remove('is-hidden');
+          }
+        });
+      });
+
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function () {
+          if (splash) splash.classList.remove('is-hidden');
+        });
+      });
+
+      requestAnimationFrame(() => setTimeout(hideSplash, 380));
+      window.addEventListener('pageshow', () => setTimeout(hideSplash, 120));
+    });
+
+    // Floating horizontal scrollbar sync
+    window.addEventListener('scroll', syncFloatingScroll);
+    window.addEventListener('resize', syncFloatingScroll);
+
+    function syncFloatingScroll() {
+      const containers = document.querySelectorAll('.table-responsive');
+      containers.forEach(container => {
+        let mirror = container._mirror;
+        if (!mirror) {
+          mirror = document.createElement('div');
+          mirror.className = 'floating-scroll-mirror';
+          mirror.innerHTML = '<div class="floating-scroll-inner"></div>';
+          document.body.appendChild(mirror);
+          container._mirror = mirror;
+
+          container.addEventListener('scroll', () => {
+            mirror.scrollLeft = container.scrollLeft;
+          });
+          mirror.addEventListener('scroll', () => {
+            container.scrollLeft = mirror.scrollLeft;
+          });
+        }
+
+        const rect = container.getBoundingClientRect();
+        const winHeight = window.innerHeight;
+        const inner = mirror.querySelector('.floating-scroll-inner');
+
+        const isWide = container.scrollWidth > container.clientWidth;
+        const isOffScreen = rect.bottom > winHeight && rect.top < winHeight;
+
+        if (isWide && isOffScreen) {
+          mirror.style.display = 'block';
+          mirror.style.width = container.clientWidth + 'px';
+          mirror.style.left = rect.left + 'px';
+          inner.style.width = container.scrollWidth + 'px';
+          mirror.scrollLeft = container.scrollLeft;
+        } else {
+          mirror.style.display = 'none';
+        }
+      });
+    }
+    setTimeout(syncFloatingScroll, 1000);
+  </script>
+
+</body>
+
+</html>

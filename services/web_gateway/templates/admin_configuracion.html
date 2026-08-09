@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid px-0 catalog-admin-page">
+  <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4">
+    <div>
+      <a href="{{ url_for('admin_home') }}" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Centro de administración</a>
+      <h1 class="h2 fw-bold mt-2 mb-1">Opciones de los formularios</h1>
+      <p class="text-muted mb-0">Edite de forma visual las empresas, gestiones, productos y tipos que aparecen en cada documento.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('admin_campos') }}" class="btn btn-outline-primary"><i class="bi bi-ui-checks-grid me-2"></i>Agregar campos nuevos</a>
+      <button class="btn btn-primary" id="newItemButton"><i class="bi bi-plus-circle me-2"></i>Agregar una opción</button>
+    </div>
+  </div>
+
+  <div class="alert alert-primary border-0 shadow-sm mb-4">
+    <div class="d-flex gap-3 align-items-start">
+      <i class="bi bi-lightbulb-fill fs-4"></i>
+      <div>
+        <strong>¿Qué desea cambiar?</strong>
+        <div class="small mt-1"><strong>Opciones de una lista:</strong> use esta pantalla. <strong>Una pregunta o dato nuevo:</strong> use “Agregar campos nuevos”. Ocultar una opción no borra los documentos anteriores.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+      <div class="small text-muted fw-semibold text-uppercase mb-2">1. Seleccione el módulo</div>
+      <div class="catalog-module-grid" id="moduleSelector"></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-3">
+      <div class="card border-0 shadow-sm sticky-xl-top catalog-sidebar-card">
+        <div class="card-body">
+          <div class="small text-muted fw-semibold text-uppercase mb-2">2. Seleccione la lista</div>
+          <div class="d-grid gap-2" id="categorySelector"></div>
+          <hr>
+          <div class="small text-muted">
+            <div class="fw-semibold text-dark mb-2"><i class="bi bi-shield-check me-2"></i>Cambios seguros</div>
+            <div class="mb-2">Las opciones se guardan en PostgreSQL.</div>
+            <div>Al ocultarlas dejan de aparecer en documentos nuevos, pero se conservan en los documentos ya registrados.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-9">
+      <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-header bg-white border-0 p-4 pb-3">
+          <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3">
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h2 class="h4 fw-bold mb-0" id="currentCategoryTitle">Empresas</h2>
+                <span class="badge rounded-pill text-bg-light border" id="itemCounter">0 opciones</span>
+              </div>
+              <p class="text-muted small mb-0 mt-2" id="currentCategoryDescription"></p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-outline-primary btn-sm" id="bulkAddButton"><i class="bi bi-list-ul me-2"></i>Agregar varias</button>
+              <button class="btn btn-primary btn-sm" id="headerNewItemButton"><i class="bi bi-plus-lg me-2"></i>Agregar opción</button>
+            </div>
+          </div>
+
+          <div class="row g-2 mt-3">
+            <div class="col-md-7">
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input class="form-control" id="catalogSearch" placeholder="Buscar por nombre o valor…" autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearchButton" title="Limpiar búsqueda"><i class="bi bi-x-lg"></i></button>
+              </div>
+            </div>
+            <div class="col-md-5">
+              <select class="form-select" id="statusFilter">
+                <option value="all">Mostrar activas e inactivas</option>
+                <option value="active">Solo activas</option>
+                <option value="inactive">Solo ocultas</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 catalog-table">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-4" style="width:92px">Orden</th>
+                <th>Opción visible</th>
+                <th id="detailsHeader">Configuración</th>
+                <th style="width:110px">Estado</th>
+                <th class="text-end pe-4" style="width:235px">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="catalogTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="catalogLoading" class="text-center p-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <div class="text-muted mt-3">Cargando opciones…</div>
+        </div>
+
+        <div id="catalogEmpty" class="text-center p-5" hidden>
+          <i class="bi bi-inboxes display-5 text-muted"></i>
+          <h3 class="h5 mt-3" id="emptyTitle">No existen opciones</h3>
+          <p class="text-muted" id="emptyText">Agregue la primera opción para que aparezca en el formulario.</p>
+          <button class="btn btn-primary" onclick="openCreateModal()"><i class="bi bi-plus-circle me-2"></i>Agregar primera opción</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Crear / editar una opción -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div><h5 class="modal-title fw-bold" id="itemModalTitle">Agregar opción</h5><div class="small text-muted" id="itemModalSubtitle"></div></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="itemForm" novalidate>
+          <input type="hidden" id="itemId">
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="itemName">Nombre que verá el usuario <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="itemName" rows="2" maxlength="500" placeholder="Escriba la opción tal como debe aparecer" required></textarea>
+            <div class="form-text">Este texto aparecerá en la lista desplegable del formulario.</div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-6" id="parentGroup" hidden>
+              <label class="form-label fw-semibold" for="itemParent">Ubicación dentro de la jerarquía</label>
+              <select class="form-select" id="itemParent"><option value="">Nivel principal</option></select>
+              <div class="form-text">Solo se usa para organizar tipos y subtipos de informe.</div>
+            </div>
+            <div class="col-md-6" id="specialGroup">
+              <label class="form-label fw-semibold" for="itemSpecial">Comportamiento especial</label>
+              <select class="form-select" id="itemSpecial"></select>
+              <div class="form-text" id="specialHelp">Normal: se selecciona sin mostrar campos adicionales.</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold" for="itemOrder">Posición</label>
+              <input type="number" min="0" class="form-control" id="itemOrder" value="10">
+              <div class="form-text">También puede moverla después con las flechas.</div>
+            </div>
+            <div class="col-md-4 d-flex align-items-center">
+              <div class="form-check form-switch mt-4">
+                <input class="form-check-input" type="checkbox" id="itemActive" checked>
+                <label class="form-check-label fw-semibold" for="itemActive">Visible en formularios</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion mt-4" id="advancedAccordion">
+            <div class="accordion-item">
+              <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedCollapse"><i class="bi bi-gear me-2"></i>Configuración avanzada</button></h2>
+              <div id="advancedCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedAccordion">
+                <div class="accordion-body">
+                  <label class="form-label fw-semibold" for="itemValue">Valor interno</label>
+                  <input class="form-control" id="itemValue" maxlength="500" placeholder="Déjelo vacío para usar el mismo nombre visible">
+                  <div class="form-text">No es necesario completarlo normalmente. Úselo solo si el sistema debe guardar un valor distinto al texto mostrado.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" type="button" id="saveItemButton"><i class="bi bi-save me-2"></i>Guardar opción</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Agregar varias opciones -->
+<div class="modal fade" id="bulkModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header">
+        <div><h5 class="modal-title fw-bold">Agregar varias opciones</h5><div class="small text-muted" id="bulkSubtitle"></div></div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-light border small"><i class="bi bi-info-circle text-primary me-2"></i>Escriba una opción por línea. También puede usar <code>Nombre visible | valor interno</code>.</div>
+        <label class="form-label fw-semibold" for="bulkItems">Opciones <span class="text-danger">*</span></label>
+        <textarea class="form-control font-monospace" id="bulkItems" rows="10" placeholder="Opción uno&#10;Opción dos&#10;Nombre mostrado | valor_guardado"></textarea>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6" id="bulkParentGroup" hidden>
+            <label class="form-label fw-semibold" for="bulkParent">Agregar dentro de</label>
+            <select class="form-select" id="bulkParent"><option value="">Nivel principal</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold" for="bulkSpecial">Comportamiento</label>
+            <select class="form-select" id="bulkSpecial"></select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" type="button" id="saveBulkButton"><i class="bi bi-plus-square me-2"></i>Agregar opciones</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div class="toast border-0 shadow" id="catalogToast" role="alert"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2" id="toastIcon"></i><strong class="me-auto" id="toastTitle">Listo</strong><button class="btn-close" type="button" data-bs-dismiss="toast"></button></div><div class="toast-body" id="toastBody"></div></div>
+</div>
+
+<script>
+const catalogModules = {
+  general: {
+    label: 'General', icon: 'bi-building', description: 'Opciones compartidas por todos los documentos.',
+    categories: [{key:'EMPRESA', label:'Empresas', icon:'bi-buildings', description:'Empresas disponibles en todos los formularios.'}]
+  },
+  informes: {
+    label: 'Informes', icon: 'bi-file-earmark-text', description: 'Listas utilizadas al crear o editar informes.',
+    categories: [
+      {key:'GESTION_INFORME', label:'Gestiones', icon:'bi-briefcase', description:'Gestiones disponibles en el formulario de informes.'},
+      {key:'PRODUCTO_INFORME', label:'Productos asociados', icon:'bi-box-seam', description:'Productos asociados disponibles en informes.'},
+      {key:'TIPO_INFORME', label:'Tipos y subtipos', icon:'bi-diagram-3', description:'Jerarquía de categorías, subcategorías y detalles de informe.', hierarchy:true}
+    ]
+  },
+  reportes: {
+    label: 'Reportes', icon: 'bi-file-earmark-bar-graph', description: 'Listas utilizadas al crear o editar reportes.',
+    categories: [
+      {key:'GESTION_REPORTE', label:'Gestiones', icon:'bi-briefcase', description:'Gestiones disponibles en el formulario de reportes.'},
+      {key:'PRODUCTO_REPORTE', label:'Productos asociados', icon:'bi-box-seam', description:'Productos asociados disponibles en reportes.'},
+      {key:'TIPO_REPORTE', label:'Tipos de reporte', icon:'bi-flag', description:'Tipos disponibles en la lista de reportes.'}
+    ]
+  },
+  actas: {
+    label: 'Actas', icon: 'bi-journal-text', description: 'Listas utilizadas al crear o editar actas.',
+    categories: [
+      {key:'GESTION_ACTA', label:'Gestiones', icon:'bi-briefcase', description:'Gestiones disponibles en el formulario de actas.'},
+      {key:'PRODUCTO_ACTA', label:'Productos asociados', icon:'bi-box-seam', description:'Productos asociados disponibles en actas.'}
+    ]
+  },
+  comisiones: {
+    label: 'Comisiones', icon: 'bi-people', description: 'Listas utilizadas al crear o editar comisiones.',
+    categories: [
+      {key:'GESTION_COMISION', label:'Gestiones', icon:'bi-briefcase', description:'Gestiones disponibles en el formulario de comisiones.'},
+      {key:'PRODUCTO_COMISION', label:'Productos asociados', icon:'bi-box-seam', description:'Productos asociados disponibles en comisiones.'}
+    ]
+  }
+};
+
+let currentModule = 'general';
+let currentCategory = 'EMPRESA';
+let allItems = [];
+let itemModal, bulkModal, toast;
+const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+const jsonHeaders = () => ({'Content-Type':'application/json','X-CSRF-Token':csrf()});
+const categoryConfig = () => catalogModules[currentModule].categories.find(item => item.key === currentCategory);
+
+function notify(message, type='success', title='Listo') {
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastBody').textContent = message;
+  const icon = document.getElementById('toastIcon');
+  icon.className = `bi ${type === 'danger' ? 'bi-exclamation-triangle-fill text-danger' : 'bi-check-circle-fill text-success'} me-2`;
+  toast.show();
+}
+
+function renderModules() {
+  const container = document.getElementById('moduleSelector');
+  container.innerHTML = Object.entries(catalogModules).map(([key,module]) => `
+    <button type="button" class="catalog-module-button ${key===currentModule?'active':''}" data-module="${key}">
+      <span class="catalog-module-button-icon"><i class="bi ${module.icon}"></i></span>
+      <span><strong>${esc(module.label)}</strong><small>${esc(module.description)}</small></span>
+    </button>`).join('');
+  container.querySelectorAll('[data-module]').forEach(button => button.addEventListener('click', () => selectModule(button.dataset.module)));
+}
+
+function renderCategories() {
+  const container = document.getElementById('categorySelector');
+  container.innerHTML = catalogModules[currentModule].categories.map(category => `
+    <button type="button" class="catalog-category-button ${category.key===currentCategory?'active':''}" data-category="${category.key}">
+      <span><i class="bi ${category.icon} me-2"></i>${esc(category.label)}</span><i class="bi bi-chevron-right"></i>
+    </button>`).join('');
+  container.querySelectorAll('[data-category]').forEach(button => button.addEventListener('click', () => selectCategory(button.dataset.category)));
+}
+
+function selectModule(moduleKey) {
+  currentModule = moduleKey;
+  currentCategory = catalogModules[moduleKey].categories[0].key;
+  renderModules(); renderCategories(); loadItems();
+}
+
+function selectCategory(categoryKey) {
+  currentCategory = categoryKey;
+  renderCategories(); loadItems();
+}
+
+function sortedItems(items=allItems) {
+  return [...items].sort((a,b) => Number(a.orden||0)-Number(b.orden||0) || String(a.nombre).localeCompare(String(b.nombre),'es',{sensitivity:'base'}));
+}
+
+async function loadItems() {
+  const config = categoryConfig();
+  document.getElementById('currentCategoryTitle').textContent = config.label;
+  document.getElementById('currentCategoryDescription').textContent = config.description;
+  document.getElementById('catalogLoading').hidden = false;
+  document.getElementById('catalogEmpty').hidden = true;
+  document.getElementById('catalogTableBody').innerHTML = '';
+  try {
+    const response = await fetch(`/api/catalogos/${currentCategory}`);
+    const data = await response.json();
+    if (!response.ok || data.error) throw new Error(data.error || 'No se pudieron cargar las opciones');
+    allItems = sortedItems(data.data || []);
+    renderItems();
+  } catch (error) {
+    allItems = [];
+    renderItems();
+    notify(error.message, 'danger', 'No se pudo cargar');
+  } finally {
+    document.getElementById('catalogLoading').hidden = true;
+  }
+}
+
+function itemDetail(item) {
+  const pieces = [];
+  if (categoryConfig().hierarchy) {
+    const parent = allItems.find(value => value.id === item.padre_id);
+    pieces.push(item.padre_id ? `Dentro de: ${parent ? parent.nombre : 'Elemento no disponible'}` : 'Nivel principal');
+  }
+  const special = item.meta_data?.special;
+  if (special === 'OTROS') pieces.push('Permite escribir “Otros”');
+  if (special === 'CASO_FORTUITO') pieces.push('Activa datos de caso fortuito');
+  if (item.valor && item.valor !== item.nombre) pieces.push(`Valor interno: ${item.valor}`);
+  return pieces.length ? pieces.join(' · ') : 'Opción normal';
+}
+
+function filteredItems() {
+  const query = document.getElementById('catalogSearch').value.trim().toLocaleLowerCase('es');
+  const status = document.getElementById('statusFilter').value;
+  return sortedItems().filter(item => {
+    const matchesText = !query || `${item.nombre} ${item.valor||''}`.toLocaleLowerCase('es').includes(query);
+    const matchesStatus = status === 'all' || (status === 'active' && item.activo) || (status === 'inactive' && !item.activo);
+    return matchesText && matchesStatus;
+  });
+}
+
+function renderItems() {
+  const body = document.getElementById('catalogTableBody');
+  const items = filteredItems();
+  body.innerHTML = '';
+  const activeCount = allItems.filter(item => item.activo).length;
+  document.getElementById('itemCounter').textContent = `${activeCount} activas / ${allItems.length} total`;
+  document.getElementById('detailsHeader').textContent = categoryConfig().hierarchy ? 'Jerarquía y comportamiento' : 'Configuración';
+
+  items.forEach(item => {
+    const globalIndex = allItems.findIndex(value => value.id === item.id);
+    const row = document.createElement('tr');
+    row.className = item.activo ? '' : 'catalog-row-inactive';
+    row.innerHTML = `
+      <td class="ps-4">
+        <div class="d-flex align-items-center gap-2">
+          <div class="btn-group-vertical btn-group-sm">
+            <button class="btn btn-outline-secondary" type="button" title="Subir" ${globalIndex<=0?'disabled':''} onclick="moveItem(${item.id},-1)"><i class="bi bi-chevron-up"></i></button>
+            <button class="btn btn-outline-secondary" type="button" title="Bajar" ${globalIndex>=allItems.length-1?'disabled':''} onclick="moveItem(${item.id},1)"><i class="bi bi-chevron-down"></i></button>
+          </div>
+          <span class="small text-muted">${Number(item.orden||0)}</span>
+        </div>
+      </td>
+      <td>
+        <div class="fw-semibold catalog-option-name">${esc(item.nombre)}</div>
+        <div class="small text-muted d-xl-none mt-1">${esc(itemDetail(item))}</div>
+      </td>
+      <td class="d-none d-xl-table-cell"><span class="small text-muted">${esc(itemDetail(item))}</span></td>
+      <td>${item.activo?'<span class="badge text-bg-success">Visible</span>':'<span class="badge text-bg-secondary">Oculta</span>'}</td>
+      <td class="text-end pe-4">
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-primary" type="button" onclick="openEditModal(${item.id})"><i class="bi bi-pencil me-1"></i>Editar</button>
+          <button class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" type="button" data-bs-toggle="dropdown"><span class="visually-hidden">Más acciones</span></button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><button class="dropdown-item" type="button" onclick="duplicateItem(${item.id})"><i class="bi bi-copy me-2"></i>Duplicar como nueva</button></li>
+            <li><button class="dropdown-item" type="button" onclick="toggleItem(${item.id})"><i class="bi ${item.activo?'bi-eye-slash':'bi-eye'} me-2"></i>${item.activo?'Ocultar':'Volver a mostrar'}</button></li>
+          </ul>
+        </div>
+      </td>`;
+    body.appendChild(row);
+  });
+
+  const empty = items.length === 0;
+  document.getElementById('catalogEmpty').hidden = !empty;
+  const filtering = document.getElementById('catalogSearch').value || document.getElementById('statusFilter').value !== 'all';
+  document.getElementById('emptyTitle').textContent = filtering ? 'No hay coincidencias' : 'No existen opciones';
+  document.getElementById('emptyText').textContent = filtering ? 'Cambie la búsqueda o el filtro de estado.' : 'Agregue la primera opción para que aparezca en el formulario.';
+}
+
+function specialOptions(selected='') {
+  const options = [{value:'',label:'Normal'}];
+  if (currentCategory !== 'EMPRESA') options.push({value:'OTROS',label:'Otros: permite escribir manualmente'});
+  if (currentCategory === 'TIPO_INFORME') options.splice(1,0,{value:'CASO_FORTUITO',label:'Caso fortuito: muestra datos técnicos'});
+  return options.map(item => `<option value="${item.value}" ${item.value===selected?'selected':''}>${esc(item.label)}</option>`).join('');
+}
+
+function hierarchyDepth(item) {
+  let depth = 1, current = item, visited = new Set();
+  while (current?.padre_id) {
+    if (visited.has(current.id)) return 99;
+    visited.add(current.id);
+    current = allItems.find(value => value.id === current.padre_id);
+    depth += 1;
+  }
+  return depth;
+}
+
+function isDescendant(candidateId, ancestorId) {
+  let current = allItems.find(value => value.id === candidateId), visited = new Set();
+  while (current?.padre_id) {
+    if (visited.has(current.id)) return true;
+    visited.add(current.id);
+    if (current.padre_id === ancestorId) return true;
+    current = allItems.find(value => value.id === current.padre_id);
+  }
+  return false;
+}
+
+function fillParentSelect(selectId, selected='', excludeId=null) {
+  const select = document.getElementById(selectId);
+  select.innerHTML = '<option value="">Nivel principal</option>';
+  if (!categoryConfig().hierarchy) return;
+  sortedItems().filter(item => item.id !== excludeId && hierarchyDepth(item) < 3 && !(excludeId && isDescendant(item.id, excludeId))).forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = `${'— '.repeat(Math.max(hierarchyDepth(item)-1,0))}${item.nombre}`;
+    option.selected = String(item.id) === String(selected);
+    select.appendChild(option);
+  });
+}
+
+function configureModal(item=null, duplicate=false) {
+  document.getElementById('itemForm').reset();
+  const editing = !!item && !duplicate;
+  document.getElementById('itemId').value = editing ? item.id : '';
+  document.getElementById('itemModalTitle').textContent = editing ? 'Editar opción' : (duplicate ? 'Duplicar opción' : 'Agregar opción');
+  document.getElementById('itemModalSubtitle').textContent = `${catalogModules[currentModule].label} · ${categoryConfig().label}`;
+  document.getElementById('itemName').value = item?.nombre || '';
+  document.getElementById('itemValue').value = item?.valor || '';
+  document.getElementById('itemOrder').value = duplicate ? ((allItems.at(-1)?.orden || 0) + 10) : (item?.orden ?? ((allItems.at(-1)?.orden || 0) + 10));
+  document.getElementById('itemActive').checked = item ? !!item.activo : true;
+  document.getElementById('parentGroup').hidden = !categoryConfig().hierarchy;
+  fillParentSelect('itemParent', duplicate ? '' : item?.padre_id, editing ? item.id : null);
+  document.getElementById('itemSpecial').innerHTML = specialOptions(item?.meta_data?.special || '');
+  updateSpecialHelp();
+}
+
+function openCreateModal() { configureModal(); itemModal.show(); setTimeout(()=>document.getElementById('itemName').focus(),200); }
+function openEditModal(id) { const item=allItems.find(value=>value.id===id); if(item){configureModal(item);itemModal.show();} }
+function duplicateItem(id) { const item=allItems.find(value=>value.id===id); if(item){configureModal(item,true);document.getElementById('itemName').value=`${item.nombre} (copia)`;itemModal.show();} }
+
+function updateSpecialHelp() {
+  const value = document.getElementById('itemSpecial').value;
+  document.getElementById('specialHelp').textContent = value === 'OTROS' ? 'Al seleccionarla aparecerá una caja para escribir una respuesta manual.' : value === 'CASO_FORTUITO' ? 'Al seleccionarla aparecerán los datos técnicos de caso fortuito.' : 'Normal: se selecciona sin mostrar campos adicionales.';
+}
+
+async function saveItem() {
+  const form = document.getElementById('itemForm'); if (!form.reportValidity()) return;
+  const id = document.getElementById('itemId').value;
+  const special = document.getElementById('itemSpecial').value;
+  const payload = {
+    categoria: currentCategory,
+    nombre: document.getElementById('itemName').value.trim(),
+    valor: document.getElementById('itemValue').value.trim(),
+    padre_id: categoryConfig().hierarchy ? (document.getElementById('itemParent').value || null) : null,
+    orden: Number(document.getElementById('itemOrder').value || 0),
+    activo: document.getElementById('itemActive').checked,
+    meta_data: special ? {special} : null
+  };
+  const button = document.getElementById('saveItemButton'); button.disabled=true;
+  try {
+    const response = await fetch(id?`/api/catalogos/${id}`:'/api/catalogos',{method:id?'PUT':'POST',headers:jsonHeaders(),body:JSON.stringify(payload)});
+    const data = await response.json(); if(!response.ok || data.error) throw new Error(data.error||'No se pudo guardar');
+    itemModal.hide(); await loadItems(); notify(id?'La opción fue actualizada.':'La opción fue agregada.');
+  } catch(error) { notify(error.message,'danger','No se pudo guardar'); }
+  finally { button.disabled=false; }
+}
+
+async function toggleItem(id) {
+  const item = allItems.find(value=>value.id===id); if(!item)return;
+  const payload = {...item, activo:!item.activo};
+  try {
+    const response=await fetch(`/api/catalogos/${id}`,{method:'PUT',headers:jsonHeaders(),body:JSON.stringify(payload)});
+    const data=await response.json(); if(!response.ok||data.error)throw new Error(data.error||'No se pudo cambiar el estado');
+    await loadItems(); notify(payload.activo?'La opción vuelve a estar visible.':'La opción fue ocultada sin borrar información.');
+  } catch(error){notify(error.message,'danger','No se pudo actualizar');}
+}
+
+async function moveItem(id, delta) {
+  const ordered=sortedItems(); const index=ordered.findIndex(item=>item.id===id); const target=index+delta;
+  if(index<0||target<0||target>=ordered.length)return;
+  [ordered[index],ordered[target]]=[ordered[target],ordered[index]];
+  allItems=ordered.map((item,position)=>({...item,orden:(position+1)*10})); renderItems();
+  try {
+    const response=await fetch('/api/catalogos/reordenar',{method:'POST',headers:jsonHeaders(),body:JSON.stringify({categoria:currentCategory,ids:ordered.map(item=>item.id)})});
+    const data=await response.json(); if(!response.ok||data.error)throw new Error(data.error||'No se pudo guardar el orden');
+  } catch(error){notify(error.message,'danger','No se pudo ordenar');await loadItems();}
+}
+
+function openBulkModal() {
+  document.getElementById('bulkItems').value='';
+  document.getElementById('bulkSubtitle').textContent=`${catalogModules[currentModule].label} · ${categoryConfig().label}`;
+  document.getElementById('bulkParentGroup').hidden=!categoryConfig().hierarchy;
+  fillParentSelect('bulkParent');
+  document.getElementById('bulkSpecial').innerHTML=specialOptions();
+  bulkModal.show(); setTimeout(()=>document.getElementById('bulkItems').focus(),200);
+}
+
+async function saveBulk() {
+  const lines=document.getElementById('bulkItems').value.split(/\r?\n/).map(value=>value.trim()).filter(Boolean);
+  if(!lines.length){notify('Escriba al menos una opción.','danger','Faltan datos');return;}
+  const items=lines.map(line=>{const parts=line.split('|');return {nombre:(parts.shift()||'').trim(),valor:parts.join('|').trim()};}).filter(item=>item.nombre);
+  const button=document.getElementById('saveBulkButton');button.disabled=true;
+  try {
+    const response=await fetch('/api/catalogos/lote',{method:'POST',headers:jsonHeaders(),body:JSON.stringify({categoria:currentCategory,items,padre_id:categoryConfig().hierarchy?(document.getElementById('bulkParent').value||null):null,special:document.getElementById('bulkSpecial').value})});
+    const data=await response.json();if(!response.ok||data.error)throw new Error(data.error||'No se pudieron agregar las opciones');
+    bulkModal.hide();await loadItems();notify(`${data.created_count} opción(es) agregada(s)${data.skipped_count?` y ${data.skipped_count} duplicada(s) omitida(s)`:''}.`);
+  }catch(error){notify(error.message,'danger','No se pudo completar');}
+  finally{button.disabled=false;}
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  itemModal=bootstrap.Modal.getOrCreateInstance(document.getElementById('itemModal'));
+  bulkModal=bootstrap.Modal.getOrCreateInstance(document.getElementById('bulkModal'));
+  toast=bootstrap.Toast.getOrCreateInstance(document.getElementById('catalogToast'),{delay:4500});
+  renderModules();renderCategories();loadItems();
+  document.getElementById('newItemButton').addEventListener('click',openCreateModal);
+  document.getElementById('headerNewItemButton').addEventListener('click',openCreateModal);
+  document.getElementById('bulkAddButton').addEventListener('click',openBulkModal);
+  document.getElementById('saveItemButton').addEventListener('click',saveItem);
+  document.getElementById('saveBulkButton').addEventListener('click',saveBulk);
+  document.getElementById('itemSpecial').addEventListener('change',updateSpecialHelp);
+  document.getElementById('catalogSearch').addEventListener('input',renderItems);
+  document.getElementById('statusFilter').addEventListener('change',renderItems);
+  document.getElementById('clearSearchButton').addEventListener('click',()=>{document.getElementById('catalogSearch').value='';renderItems();});
+});
+</script>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-home-shell">
+  <section class="dashboard-hero fade-in-section">
+    <span class="dashboard-kicker"><i class="bi bi-stars"></i> Plataforma institucional</span>
+    <div class="row align-items-center g-4 mt-1">
+      <div class="col-lg-8">
+        <h1 class="fw-bold mb-3">Bienvenido al Sistema de Control Documental</h1>
+        <p class="hero-subtitle lead mb-0">Gestione actas, informes, reportes y comisiones en una sola plataforma. Elija una acción rápida para comenzar, consulte documentos de todos los usuarios y mantenga la información centralizada.</p>
+      </div>
+      <div class="col-lg-4">
+        <div class="dashboard-highlight-grid">
+          <div class="dashboard-highlight-card">
+            <span>Acción principal</span>
+            <strong>Crear documentos</strong>
+          </div>
+          <div class="dashboard-highlight-card">
+            <span>Consulta</span>
+            <strong>Documentos globales</strong>
+          </div>
+          <div class="dashboard-highlight-card">
+            <span>Rol actual</span>
+            <strong>{{ 'Administrador' if session.get('rol') == 'admin' else 'Usuario del sistema' }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="row g-4 mb-2">
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay:.05s;">
+      <a href="{{ url_for('crear', doc_type='actas') }}" class="home-action-card">
+        <span class="home-action-card__icon text-primary bg-primary-subtle"><i class="bi bi-journal-text"></i></span>
+        <h5 class="fw-bold">Crear Actas</h5>
+        <p>Registre actas de control con sus datos generales, empresa, gestión y observaciones.</p>
+        <span class="home-action-card__meta text-primary"><i class="bi bi-arrow-right-circle"></i> Abrir formulario</span>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay:.1s;">
+      <a href="{{ url_for('crear', doc_type='informes') }}" class="home-action-card">
+        <span class="home-action-card__icon text-warning bg-warning-subtle"><i class="bi bi-file-earmark-richtext"></i></span>
+        <h5 class="fw-bold">Crear Informes</h5>
+        <p>Genere informes técnicos, de gestión y formularios con subopciones configurables.</p>
+        <span class="home-action-card__meta text-warning-emphasis"><i class="bi bi-arrow-right-circle"></i> Continuar</span>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay:.15s;">
+      <a href="{{ url_for('crear', doc_type='reportes') }}" class="home-action-card">
+        <span class="home-action-card__icon text-danger bg-danger-subtle"><i class="bi bi-flag"></i></span>
+        <h5 class="fw-bold">Crear Reportes</h5>
+        <p>Registre novedades, alertas o seguimientos desde formularios dinámicos y reutilizables.</p>
+        <span class="home-action-card__meta text-danger-emphasis"><i class="bi bi-arrow-right-circle"></i> Ir al formulario</span>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay:.2s;">
+      <a href="{{ url_for('crear', doc_type='comisiones') }}" class="home-action-card">
+        <span class="home-action-card__icon text-success bg-success-subtle"><i class="bi bi-people"></i></span>
+        <h5 class="fw-bold">Crear Comisiones</h5>
+        <p>Registre comisiones de servicio con una interfaz clara y lista para seguimiento interno.</p>
+        <span class="home-action-card__meta text-success-emphasis"><i class="bi bi-arrow-right-circle"></i> Empezar</span>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay:.25s;">
+      <a href="{{ url_for('mis_documentos') }}" class="home-action-card">
+        <span class="home-action-card__icon text-info bg-info-subtle"><i class="bi bi-folder2-open"></i></span>
+        <h5 class="fw-bold">Ver todos los documentos</h5>
+        <p>Consulte actas, informes, reportes y comisiones creados por todos los usuarios del sistema.</p>
+        <span class="home-action-card__meta text-info-emphasis"><i class="bi bi-search"></i> Consultar registros</span>
+      </a>
+    </div>
+    {% if session.get('rol') == 'admin' %}
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay:.3s;">
+      <a href="{{ url_for('admin_home') }}" class="home-action-card">
+        <span class="home-action-card__icon text-dark bg-warning"><i class="bi bi-gear-wide-connected"></i></span>
+        <h5 class="fw-bold">Centro de administración</h5>
+        <p>Acceda a configuración, usuarios, catálogos, dashboard, logs, notificaciones y respaldos.</p>
+        <span class="home-action-card__meta"><i class="bi bi-shield-lock"></i> Solo administrador</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-xl-6 fade-in-section" style="animation-delay:.35s;">
+      <div class="quick-panel-card p-4 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h4 class="mb-0 fw-bold">Acciones recomendadas</h4>
+          <span class="badge rounded-pill text-bg-primary-subtle text-primary">Flujo rápido</span>
+        </div>
+        <div class="quick-panel-item">
+          <i class="bi bi-pencil-square"></i>
+          <div>
+            <strong>1. Cree un nuevo registro</strong>
+            <p class="mb-0 small text-muted">Use el botón “Nuevo documento” del menú o cualquiera de las tarjetas principales.</p>
+          </div>
+        </div>
+        <div class="quick-panel-item">
+          <i class="bi bi-collection"></i>
+          <div>
+            <strong>2. Reutilice formularios y accesos configurados</strong>
+            <p class="mb-0 small text-muted">Las configuraciones del catálogo permiten tener flujos tipo Google Forms sin rehacer todo desde cero.</p>
+          </div>
+        </div>
+        <div class="quick-panel-item">
+          <i class="bi bi-cloud-arrow-up"></i>
+          <div>
+            <strong>3. Mantenga respaldos y control del sistema</strong>
+            <p class="mb-0 small text-muted">En administración puede revisar logs, dashboard, notificaciones y copias de seguridad.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6 fade-in-section" style="animation-delay:.4s;">
+      <div class="shortcut-showcase-card p-4 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h4 class="mb-0 fw-bold">Accesos directos</h4>
+          <a href="{{ url_for('crear_selector') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-grid-3x3-gap me-1"></i>Ver selector</a>
+        </div>
+        <div class="shortcut-pill-grid mb-4">
+          <a class="shortcut-pill" href="{{ url_for('crear', doc_type='actas') }}"><i class="bi bi-journal-text"></i>Actas</a>
+          <a class="shortcut-pill" href="{{ url_for('crear', doc_type='informes') }}"><i class="bi bi-file-earmark-text"></i>Informes</a>
+          <a class="shortcut-pill" href="{{ url_for('crear', doc_type='reportes') }}"><i class="bi bi-flag"></i>Reportes</a>
+          <a class="shortcut-pill" href="{{ url_for('crear', doc_type='comisiones') }}"><i class="bi bi-people"></i>Comisiones</a>
+          <a class="shortcut-pill" href="{{ url_for('mis_documentos') }}"><i class="bi bi-folder2-open"></i>Documentos</a>
+          {% if session.get('rol') == 'admin' %}
+          <a class="shortcut-pill" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-bar-chart-line"></i>Dashboard admin</a>
+          {% endif %}
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="info-mini-card">
+              <strong>Visibilidad compartida</strong>
+              <small>Todos los usuarios pueden consultar los documentos cargados en la plataforma.</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-mini-card">
+              <strong>Edición protegida</strong>
+              <small>Solo el usuario creador o el administrador puede editar información sensible.</small>
+            </div>
+          </div>
+          {% if session.get('rol') == 'admin' %}
+          <div class="col-md-6">
+            <div class="info-mini-card">
+              <strong>Configuración centralizada</strong>
+              <small>Empresas, formularios, usuarios, respaldos y logs se controlan desde administración.</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-mini-card">
+              <strong>Dashboard y reportes</strong>
+              <small>El administrador puede exportar y descargar indicadores clave del sistema.</small>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

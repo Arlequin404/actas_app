@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+      <div>
+        <a href="{{ url_for('admin_documentos') if session.get('rol') == 'admin' else url_for('mis_documentos') }}" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Volver a documentos</a>
+        <h1 class="h2 text-primary fw-bold mt-2 mb-1">
+          {% if editar %}Editar{% else %}Crear{% endif %}
+          {{ 'Comisión' if tipo == 'comisiones' else ('Acta' if tipo == 'actas' else tipo[:-1] | capitalize) }}
+        </h1>
+        <p class="text-muted mb-0">{% if editar %}Actualice los datos usando el mismo formulario de creación.{% else %}Complete los datos requeridos para registrar el documento.{% endif %}</p>
+      </div>
+      {% if session.get('rol') == 'admin' %}
+      <a href="{{ url_for('admin_campos') }}" class="btn btn-outline-primary"><i class="bi bi-ui-checks-grid me-2"></i>Configurar campos</a>
+      {% endif %}
+    </div>
+
+    {% if not editar %}
+    <div class="document-type-tabs mb-4" role="navigation" aria-label="Tipos de documento">
+      {% for tab_key, tab_label in document_tabs.items() %}
+      <a class="document-type-tab {{ 'active' if tab_key == tipo else '' }}" href="{{ url_for('crear', doc_type=tab_key) }}">
+        <i class="bi {{ 'bi-journal-text' if tab_key == 'actas' else ('bi-file-earmark-text' if tab_key == 'informes' else ('bi-file-earmark-bar-graph' if tab_key == 'reportes' else 'bi-people')) }}"></i>
+        <span>{{ tab_label }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" id="mainForm" class="needs-validation">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" id="final_tipo_informe" name="tipo_informe" value="{{ tipo_informe or '' }}">
+
+      {% if editar and session.get('rol') == 'admin' %}
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-hash me-2"></i>Identificador</h5>
+        <label for="numero_manual" class="form-label">Número correlativo</label>
+        <input type="number" min="1" class="form-control" id="numero_manual" name="numero_manual"
+          value="{{ numero_original or '' }}">
+        <small class="text-muted">Al modificarlo también se actualizará el código del documento.</small>
+      </section>
+      {% endif %}
+
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-building me-2"></i>Empresa</h5>
+        <select class="form-select form-select-lg" id="empresa" name="empresa" required>
+          <option value="">-- Seleccione una empresa --</option>
+          {% for item in empresas %}
+          {% set item_value = item.valor or item.nombre %}
+          <option value="{{ item_value }}" {% if empresa_sel|default('') == item_value %}selected{% endif %}>{{ item.nombre }}</option>
+          {% endfor %}
+          {% if company_other.enabled|default(true) or empresa_sel|default('') == 'Otros' %}
+          <option value="Otros" {% if empresa_sel|default('') == 'Otros' %}selected{% endif %}>{{ company_other.label|default('Otros') }}</option>
+          {% endif %}
+        </select>
+        <div id="empresa_otro_div" class="mt-3" hidden>
+          <label for="empresa_otro" class="form-label">{{ company_other.prompt|default('Especifique la empresa') }}</label>
+          <input type="text" class="form-control" id="empresa_otro" name="empresa_otro" maxlength="200"
+            value="{{ empresa_otro or '' }}">
+        </div>
+      </section>
+
+      {% if tipo in ['actas', 'informes', 'comisiones'] %}
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>Gestión</h5>
+        <select class="form-select" id="gestiones" name="gestiones" required>
+          <option value="">-- Seleccione una gestión --</option>
+          {% for item in gestiones %}
+          {% set item_value = item.valor or item.nombre %}
+          <option value="{{ item_value }}" data-special="{{ (item.meta_data or {}).get('special', '') }}" {% if gestiones_sel|default('') == item_value %}selected{% endif %}>{{ item.nombre }}</option>
+          {% endfor %}
+        </select>
+        <div id="gestiones_otro_div" class="mt-3" hidden>
+          <label for="gestiones_otro" class="form-label">Especifique la gestión</label>
+          <input type="text" class="form-control" id="gestiones_otro" name="gestiones_otro" maxlength="500"
+            value="{{ gestiones_otro or '' }}">
+        </div>
+      </section>
+      {% endif %}
+
+{% if tipo == 'informes' %}
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-diagram-3 me-2"></i>Tipo de informe</h5>
+        <div class="mb-3">
+          <label for="tipo_informe_l1" class="form-label">Categoría principal</label>
+          <select class="form-select" id="tipo_informe_l1" required>
+            <option value="">-- Seleccione --</option>
+          </select>
+        </div>
+        <div class="mb-3" id="div_l2" hidden>
+          <label for="tipo_informe_l2" class="form-label">Subcategoría</label>
+          <select class="form-select" id="tipo_informe_l2"></select>
+        </div>
+        <div class="mb-3" id="div_l3" hidden>
+          <label for="tipo_informe_l3" class="form-label">Detalle</label>
+          <select class="form-select" id="tipo_informe_l3"></select>
+        </div>
+        <div id="tipo_informe_otro_div" class="mt-3" hidden>
+          <label for="tipo_informe_otro" class="form-label">Especifique el tipo de informe</label>
+          <input type="text" class="form-control" id="tipo_informe_otro" name="tipo_informe_otro" maxlength="300"
+            value="{{ tipo_informe_otro or '' }}">
+        </div>
+
+      </section>
+      {% endif %}
+
+      {% if tipo in ['actas', 'informes', 'comisiones'] %}
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-box-seam me-2"></i>Producto asociado</h5>
+        <select class="form-select" id="productos_asociados" name="productos_asociados" required>
+          <option value="">-- Seleccione un producto --</option>
+          {% for item in productos_asociados %}
+          {% set item_value = item.valor or item.nombre %}
+          <option value="{{ item_value }}" data-special="{{ (item.meta_data or {}).get('special', '') }}" {% if productos_asociados_sel|default('') == item_value %}selected{% endif %}>{{ item.nombre }}</option>
+          {% endfor %}
+        </select>
+        <div id="productos_asociados_otro_div" class="mt-3" hidden>
+          <label for="productos_asociados_otro" class="form-label">Especifique el producto</label>
+          <input type="text" class="form-control" id="productos_asociados_otro" name="productos_asociados_otro"
+            maxlength="1000" value="{{ productos_asociados_otro or '' }}">
+        </div>
+      </section>
+      {% endif %}
+
+      {% if tipo == 'reportes' %}
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>Gestión</h5>
+        <select class="form-select" id="gestiones_reporte" name="gestiones_reporte" required>
+          <option value="">-- Seleccione una gestión --</option>
+          {% for item in gestiones %}
+          {% set item_value = item.valor or item.nombre %}
+          <option value="{{ item_value }}" data-special="{{ (item.meta_data or {}).get('special', '') }}" {% if gestiones_sel|default('') == item_value %}selected{% endif %}>{{ item.nombre }}</option>
+          {% endfor %}
+        </select>
+        <div id="gestiones_reporte_otro_div" class="mt-3" hidden>
+          <label for="gestiones_reporte_otro" class="form-label">Especifique la gestión</label>
+          <input type="text" class="form-control" id="gestiones_reporte_otro" name="gestiones_reporte_otro"
+            maxlength="500" value="{{ gestiones_otro or '' }}">
+        </div>
+      </section>
+
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-flag me-2"></i>Tipo de reporte</h5>
+        <select class="form-select" id="tipo_reporte" name="tipo_reporte" required>
+          <option value="">-- Seleccione un tipo --</option>
+          {% for item in tipos_reporte %}
+          {% set item_value = item.valor or item.nombre %}
+          <option value="{{ item_value }}" data-special="{{ (item.meta_data or {}).get('special', '') }}" {% if tipo_reporte_sel|default('') == item_value %}selected{% endif %}>{{ item.nombre }}</option>
+          {% endfor %}
+        </select>
+        <div id="tipo_reporte_otro_div" class="mt-3" hidden>
+          <label for="tipo_reporte_otro" class="form-label">Especifique el tipo de reporte</label>
+          <input type="text" class="form-control" id="tipo_reporte_otro" name="tipo_reporte_otro" maxlength="300"
+            value="{{ tipo_reporte_otro or '' }}">
+        </div>
+      </section>
+
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-box-seam me-2"></i>Producto asociado</h5>
+        <select class="form-select" id="productos_asociados_reporte" name="productos_asociados_reporte" required>
+          <option value="">-- Seleccione un producto --</option>
+          {% for item in productos_asociados %}
+          {% set item_value = item.valor or item.nombre %}
+          <option value="{{ item_value }}" data-special="{{ (item.meta_data or {}).get('special', '') }}" {% if productos_asociados_sel|default('') == item_value %}selected{% endif %}>{{ item.nombre }}</option>
+          {% endfor %}
+        </select>
+        <div id="productos_asociados_reporte_otro_div" class="mt-3" hidden>
+          <label for="productos_asociados_reporte_otro" class="form-label">Especifique el producto</label>
+          <input type="text" class="form-control" id="productos_asociados_reporte_otro" name="productos_asociados_reporte_otro"
+            maxlength="1000" value="{{ productos_asociados_otro or '' }}">
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="premium-card">
+        <h5 class="section-title"><i class="bi bi-file-text me-2"></i>Contenido</h5>
+        <div class="mb-4">
+          <label for="asunto" class="form-label">Asunto</label>
+          <input type="text" class="form-control" id="asunto" name="asunto" maxlength="255" required
+            value="{{ asunto or '' }}">
+        </div>
+        <div class="mb-3">
+          <label for="observaciones" class="form-label">Observaciones</label>
+          <textarea class="form-control" id="observaciones" name="observaciones" rows="5" maxlength="5000">{{ observaciones or '' }}</textarea>
+        </div>
+      </section>
+
+      {% if session.get('rol') == 'admin' %}
+      <div class="d-flex justify-content-end mb-3">
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('admin_campos') }}" target="_blank"><i class="bi bi-plus-square me-2"></i>Agregar o administrar campos del formulario</a>
+      </div>
+      {% endif %}
+
+      {% for section in dynamic_sections %}
+      {% if section.fields %}
+      <section class="premium-card dynamic-form-section"
+        data-condition='{{ (section.show_when or {}) | tojson }}'
+        data-section-key="{{ section.section_key }}">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h5 class="section-title mb-1"><i class="bi {{ section.icon or 'bi-ui-checks-grid' }} me-2"></i>{{ section.title }}</h5>
+            {% if section.description %}<p class="text-muted small mb-0">{{ section.description }}</p>{% endif %}
+          </div>
+          <span class="badge rounded-pill text-bg-light border">{{ section.fields|length }} campo(s)</span>
+        </div>
+        <div class="row g-4">
+          {% for field in section.fields %}
+          {% set field_name = 'custom_' ~ field.field_key %}
+          {% set saved_value = custom_values.get(field.field_key, '') %}
+          {% set saved_other = custom_values.get(field.field_key ~ '__other', '') %}
+          {% if field.field_type in ['multiselect','checkboxes'] %}
+            {% set current_values = request.form.getlist(field_name) if request.method == 'POST' else (saved_value if saved_value is iterable and saved_value is not string else []) %}
+          {% else %}
+            {% set current_value = request.form.get(field_name, saved_value) %}
+          {% endif %}
+          {% set current_other = request.form.get(field_name ~ '__other', saved_other) %}
+          <div class="{% if field.field_type in ['textarea','radio','multiselect','checkboxes'] %}col-12{% else %}col-md-6{% endif %}">
+            <label class="form-label fw-semibold" for="{{ field_name }}">{{ field.label }}{% if field.required %}<span class="text-danger ms-1">*</span>{% endif %}</label>
+            {% if field.field_type == 'textarea' %}
+              <textarea class="form-control" id="{{ field_name }}" name="{{ field_name }}" rows="4" maxlength="5000" placeholder="{{ field.placeholder or '' }}" {% if field.required %}required{% endif %}>{{ current_value }}</textarea>
+            {% elif field.field_type == 'select' %}
+              <select class="form-select custom-other-control" id="{{ field_name }}" name="{{ field_name }}" data-other-target="{{ field_name }}__other_wrap" {% if field.required %}required{% endif %}>
+                <option value="">-- Seleccione --</option>
+                {% for option in field.options %}<option value="{{ option }}" {% if current_value|string == option|string %}selected{% endif %}>{{ option }}</option>{% endfor %}
+                {% if field.allow_other %}<option value="__other__" {% if current_value == 'Otros' or current_other %}selected{% endif %}>Otros</option>{% endif %}
+              </select>
+            {% elif field.field_type == 'radio' %}
+              <div class="border rounded-3 p-3 custom-radio-group" data-other-target="{{ field_name }}__other_wrap">
+                {% for option in field.options %}<div class="form-check mb-2"><input class="form-check-input custom-radio-control" type="radio" id="{{ field_name }}_{{ loop.index }}" name="{{ field_name }}" value="{{ option }}" {% if current_value|string == option|string %}checked{% endif %} {% if field.required %}required{% endif %}><label class="form-check-label" for="{{ field_name }}_{{ loop.index }}">{{ option }}</label></div>{% endfor %}
+                {% if field.allow_other %}<div class="form-check"><input class="form-check-input custom-radio-control" type="radio" id="{{ field_name }}_other" name="{{ field_name }}" value="__other__" {% if current_value == 'Otros' or current_other %}checked{% endif %} {% if field.required %}required{% endif %}><label class="form-check-label" for="{{ field_name }}_other">Otros</label></div>{% endif %}
+              </div>
+            {% elif field.field_type == 'multiselect' %}
+              <select class="form-select custom-multiselect-control" id="{{ field_name }}" name="{{ field_name }}" multiple size="{{ [field.options|length + (1 if field.allow_other else 0), 6]|min }}" data-other-target="{{ field_name }}__other_wrap" {% if field.required %}required{% endif %}>
+                {% for option in field.options %}<option value="{{ option }}" {% if option in current_values %}selected{% endif %}>{{ option }}</option>{% endfor %}
+                {% if field.allow_other %}<option value="__other__" {% if 'Otros' in current_values or current_other %}selected{% endif %}>Otros</option>{% endif %}
+              </select><div class="form-text">Use Ctrl para seleccionar varias opciones en Windows.</div>
+            {% elif field.field_type == 'checkboxes' %}
+              <div class="border rounded-3 p-3 custom-checkboxes-group" data-other-target="{{ field_name }}__other_wrap" data-required="{{ '1' if field.required else '0' }}">
+                {% for option in field.options %}<div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="{{ field_name }}_{{ loop.index }}" name="{{ field_name }}" value="{{ option }}" {% if option in current_values %}checked{% endif %}><label class="form-check-label" for="{{ field_name }}_{{ loop.index }}">{{ option }}</label></div>{% endfor %}
+                {% if field.allow_other %}<div class="form-check"><input class="form-check-input" type="checkbox" id="{{ field_name }}_other" name="{{ field_name }}" value="__other__" {% if 'Otros' in current_values or current_other %}checked{% endif %}><label class="form-check-label" for="{{ field_name }}_other">Otros</label></div>{% endif %}
+                <div class="invalid-feedback d-block" hidden>Seleccione al menos una opción.</div>
+              </div>
+            {% elif field.field_type == 'checkbox' %}
+              <div class="form-check form-switch border rounded-3 p-3 ps-5"><input class="form-check-input" type="checkbox" value="1" id="{{ field_name }}" name="{{ field_name }}" {% if request.method == 'POST' and request.form.get(field_name) == '1' or request.method != 'POST' and saved_value %}checked{% endif %} {% if field.required %}required{% endif %}><label class="form-check-label" for="{{ field_name }}">Confirmar</label></div>
+            {% elif field.field_type == 'yesno' %}
+              <select class="form-select" id="{{ field_name }}" name="{{ field_name }}" {% if field.required %}required{% endif %}><option value="">-- Seleccione --</option><option value="1" {% if current_value in [True,'1',1] %}selected{% endif %}>Sí</option><option value="0" {% if current_value in [False,'0',0] and current_value != '' %}selected{% endif %}>No</option></select>
+            {% else %}
+              <input class="form-control" id="{{ field_name }}" name="{{ field_name }}" type="{{ 'number' if field.field_type == 'number' else ('date' if field.field_type == 'date' else ('datetime-local' if field.field_type == 'datetime' else ('time' if field.field_type == 'time' else ('email' if field.field_type == 'email' else ('tel' if field.field_type == 'tel' else ('url' if field.field_type == 'url' else 'text')))))) }}" maxlength="5000" value="{{ current_value }}" placeholder="{{ field.placeholder or '' }}" {% if field.required %}required{% endif %}>
+            {% endif %}
+            {% if field.allow_other and field.field_type in ['select','radio','multiselect','checkboxes'] %}
+            <div class="mt-2" id="{{ field_name }}__other_wrap" hidden><label class="form-label small" for="{{ field_name }}__other">Especifique “Otros”</label><input class="form-control" id="{{ field_name }}__other" name="{{ field_name }}__other" maxlength="500" value="{{ current_other }}"></div>
+            {% endif %}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+      {% endfor %}
+
+      {% if editar and archived_custom_fields and session.get('rol') == 'admin' %}
+      <section class="premium-card border-secondary-subtle">
+        <details>
+          <summary class="fw-semibold text-secondary" style="cursor:pointer"><i class="bi bi-archive me-2"></i>Datos históricos de campos ocultos ({{ archived_custom_fields|length }})</summary>
+          <p class="small text-muted mt-3">Estos valores se conservan porque el campo fue ocultado después de registrar el documento.</p>
+          <div class="row g-3">
+            {% for field in archived_custom_fields %}
+            <div class="col-md-6"><label class="form-label small fw-semibold">{{ field.label }}</label><input class="form-control bg-light" value="{{ field.value }}" readonly></div>
+            {% endfor %}
+          </div>
+        </details>
+      </section>
+      {% endif %}
+
+      <div class="d-flex flex-column flex-md-row gap-2 justify-content-end mb-5">
+        <a href="{{ url_for('admin_documentos') if session.get('rol') == 'admin' else url_for('mis_documentos') }}" class="btn btn-light btn-lg px-4">Cancelar</a>
+        <button type="submit" class="btn btn-primary btn-lg shadow px-5"><i class="bi bi-save me-2"></i>{% if editar %}Actualizar documento{% else %}Guardar documento{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const setupOther = (selectId, containerId, inputId) => {
+      const select = document.getElementById(selectId);
+      const container = document.getElementById(containerId);
+      const input = document.getElementById(inputId);
+      if (!select || !container || !input) return;
+      const sync = () => {
+        const selected = select.options[select.selectedIndex];
+        const active = select.value.toLowerCase() === 'otros' || selected?.dataset.special === 'OTROS';
+        container.hidden = !active;
+        input.required = active;
+        if (!active) input.value = '';
+      };
+      select.addEventListener('change', sync);
+      sync();
+    };
+
+    setupOther('empresa', 'empresa_otro_div', 'empresa_otro');
+    setupOther('gestiones', 'gestiones_otro_div', 'gestiones_otro');
+    setupOther('productos_asociados', 'productos_asociados_otro_div', 'productos_asociados_otro');
+    setupOther('gestiones_reporte', 'gestiones_reporte_otro_div', 'gestiones_reporte_otro');
+    setupOther('tipo_reporte', 'tipo_reporte_otro_div', 'tipo_reporte_otro');
+    setupOther('productos_asociados_reporte', 'productos_asociados_reporte_otro_div', 'productos_asociados_reporte_otro');
+  });
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const syncControl = control => {
+    const targetId = control.dataset.otherTarget;
+    if (!targetId) return;
+    const wrap = document.getElementById(targetId);
+    const input = wrap?.querySelector('input');
+    if (!wrap || !input) return;
+    let active = false;
+    if (control.classList.contains('custom-other-control')) active = control.value === '__other__';
+    if (control.classList.contains('custom-multiselect-control')) active = [...control.selectedOptions].some(x => x.value === '__other__');
+    wrap.hidden = !active; input.required = active;
+    if (!active) input.value = '';
+  };
+  document.querySelectorAll('.custom-other-control,.custom-multiselect-control').forEach(control => { control.addEventListener('change', () => syncControl(control)); syncControl(control); });
+  document.querySelectorAll('.custom-radio-group').forEach(group => {
+    const sync = () => {
+      const wrap = document.getElementById(group.dataset.otherTarget);
+      const input = wrap?.querySelector('input');
+      const selected = group.querySelector('input:checked');
+      const active = selected?.value === '__other__';
+      if (wrap) wrap.hidden = !active;
+      if (input) { input.required = active; if (!active) input.value = ''; }
+    };
+    group.querySelectorAll('input').forEach(input => input.addEventListener('change', sync)); sync();
+  });
+  document.querySelectorAll('.custom-checkboxes-group').forEach(group => {
+    const controls = [...group.querySelectorAll('input[type="checkbox"]')];
+    const feedback = group.querySelector('.invalid-feedback');
+    const sync = () => {
+      const checked = controls.filter(input => input.checked);
+      const requiredMissing = group.dataset.required === '1' && checked.length === 0;
+      if (controls[0]) controls[0].setCustomValidity(requiredMissing ? 'Seleccione al menos una opción.' : '');
+      if (feedback) feedback.hidden = !requiredMissing;
+      const wrap = document.getElementById(group.dataset.otherTarget);
+      const otherInput = wrap?.querySelector('input');
+      const otherActive = checked.some(input => input.value === '__other__');
+      if (wrap) wrap.hidden = !otherActive;
+      if (otherInput) { otherInput.required = otherActive; if (!otherActive) otherInput.value = ''; }
+    };
+    controls.forEach(input => input.addEventListener('change', sync)); sync();
+  });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sections = [...document.querySelectorAll('.dynamic-form-section[data-condition]')];
+  const readValue = fieldKey => {
+    const key = String(fieldKey || '');
+    const systemNameMap = {{ ({'gestiones': 'gestiones_reporte', 'productos_asociados': 'productos_asociados_reporte'} if tipo == 'reportes' else {}) | tojson }};
+    const rawId = key.startsWith('custom:') ? `custom_${key.split(':', 2)[1]}` : key;
+    const id = systemNameMap[rawId] || rawId;
+    const controls = [...document.querySelectorAll(`[name="${CSS.escape(id)}"]`)];
+    if (controls.length > 1 && controls[0].type === 'radio') return controls.find(item => item.checked)?.value || '';
+    if (controls.length > 1 && controls[0].type === 'checkbox') return controls.filter(item => item.checked).map(item => item.value);
+    const control = document.getElementById(id) || controls[0];
+    if (!control) return '';
+    if (control.multiple) return [...control.selectedOptions].map(item => item.value);
+    if (control.type === 'checkbox') return control.checked ? control.value : '';
+    return control.value || '';
+  };
+  const matches = condition => {
+    if (!condition || !condition.field_key) return true;
+    const values = Array.isArray(readValue(condition.field_key)) ? readValue(condition.field_key) : [readValue(condition.field_key)];
+    const expected = String(condition.value || '').trim().toLocaleLowerCase('es');
+    if (condition.operator === 'not_empty') return values.some(value => String(value).trim().length > 0);
+    if (condition.operator === 'contains') return values.some(value => String(value).toLocaleLowerCase('es').includes(expected));
+    return values.some(value => String(value).trim().toLocaleLowerCase('es') === expected);
+  };
+  const syncSections = () => {
+    sections.forEach(section => {
+      let condition = {};
+      try { condition = JSON.parse(section.dataset.condition || '{}'); } catch (_) {}
+      const visible = matches(condition);
+      section.hidden = !visible;
+      section.querySelectorAll('input,select,textarea,button').forEach(control => {
+        if (!control.dataset.originalRequired) control.dataset.originalRequired = control.required ? '1' : '0';
+        control.disabled = !visible;
+        control.required = visible && control.dataset.originalRequired === '1';
+      });
+    });
+  };
+  document.getElementById('mainForm')?.addEventListener('change', syncSections);
+  document.getElementById('mainForm')?.addEventListener('input', syncSections);
+  syncSections();
+  window.syncDynamicFormSections = syncSections;
+});
+</script>
+
+{% if tipo == 'informes' %}
+<script type="application/json" id="report-types-data">{{ report_types_json | default([]) | tojson }}</script>
+<script type="application/json" id="selected-report-type">{{ tipo_informe_sel | default('') | tojson }}</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tree = JSON.parse(document.getElementById('report-types-data').textContent || '[]');
+    const selectedValue = JSON.parse(document.getElementById('selected-report-type').textContent || '""');
+    const l1 = document.getElementById('tipo_informe_l1');
+    const l2 = document.getElementById('tipo_informe_l2');
+    const l3 = document.getElementById('tipo_informe_l3');
+    const div2 = document.getElementById('div_l2');
+    const div3 = document.getElementById('div_l3');
+    const hidden = document.getElementById('final_tipo_informe');
+    const otherDiv = document.getElementById('tipo_informe_otro_div');
+    const otherInput = document.getElementById('tipo_informe_otro');
+
+    const fill = (select, nodes) => {
+      select.innerHTML = '<option value="">-- Seleccione --</option>';
+      nodes.forEach((node, index) => select.add(new Option(node.label, String(index))));
+    };
+
+    const currentPath = () => {
+      if (l1.value === '') return [];
+      const path = [tree[Number(l1.value)]];
+      if (!div2.hidden && l2.value !== '') path.push(path[0].children[Number(l2.value)]);
+      if (!div3.hidden && l3.value !== '') path.push(path[1].children[Number(l3.value)]);
+      return path;
+    };
+
+    const syncValueAndSpecial = () => {
+      const path = currentPath();
+      hidden.value = path.map(node => node.value).join(' - ');
+      hidden.dispatchEvent(new Event('change', { bubbles: true }));
+      const special = [...path].reverse().find(node => node.special)?.special || '';
+      otherDiv.hidden = special !== 'OTROS';
+      otherInput.required = special === 'OTROS';
+    };
+
+    const syncLevel3 = () => {
+      const root = l1.value === '' ? null : tree[Number(l1.value)];
+      const child = root && l2.value !== '' ? root.children?.[Number(l2.value)] : null;
+      const nodes = child?.children || [];
+      div3.hidden = nodes.length === 0;
+      l3.required = nodes.length > 0;
+      fill(l3, nodes);
+      syncValueAndSpecial();
+    };
+
+    const syncLevel2 = () => {
+      const root = l1.value === '' ? null : tree[Number(l1.value)];
+      const nodes = root?.children || [];
+      div2.hidden = nodes.length === 0;
+      l2.required = nodes.length > 0;
+      fill(l2, nodes);
+      div3.hidden = true;
+      l3.required = false;
+      fill(l3, []);
+      syncValueAndSpecial();
+    };
+
+    const findPath = target => {
+      for (let i = 0; i < tree.length; i++) {
+        const root = tree[i];
+        if ([root.value, root.label].includes(target)) return [i];
+        for (let j = 0; j < (root.children || []).length; j++) {
+          const child = root.children[j];
+          if ([`${root.value} - ${child.value}`, `${root.label} - ${child.label}`].includes(target)) return [i, j];
+          for (let k = 0; k < (child.children || []).length; k++) {
+            const detail = child.children[k];
+            if ([`${root.value} - ${child.value} - ${detail.value}`, `${root.label} - ${child.label} - ${detail.label}`].includes(target)) return [i, j, k];
+          }
+        }
+      }
+      return null;
+    };
+
+    fill(l1, tree);
+    l1.addEventListener('change', syncLevel2);
+    l2.addEventListener('change', syncLevel3);
+    l3.addEventListener('change', syncValueAndSpecial);
+
+    const path = findPath(selectedValue);
+    if (path) {
+      l1.value = String(path[0]);
+      syncLevel2();
+      if (path.length > 1) {
+        l2.value = String(path[1]);
+        syncLevel3();
+      }
+      if (path.length > 2) {
+        l3.value = String(path[2]);
+        syncValueAndSpecial();
+      }
+    } else if (selectedValue) {
+      const otherIndex = tree.findIndex(node => node.special === 'OTROS');
+      if (otherIndex >= 0) {
+        l1.value = String(otherIndex);
+        otherInput.value = selectedValue;
+        syncLevel2();
+      }
+    }
+    syncValueAndSpecial();
+    if (window.syncDynamicFormSections) window.syncDynamicFormSections();
+  });
+</script>
+{% endif %}
+{% endblock %}

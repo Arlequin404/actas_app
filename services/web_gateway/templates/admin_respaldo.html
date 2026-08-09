@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-primary fw-bold mb-0">Respaldo de Base de Datos</h2>
+                <a href="{{ url_for('admin_configuracion') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a Configuración
+                </a>
+            </div>
+
+            <!-- 1. Descargar respaldo -->
+            <div class="card shadow-sm mb-4" id="backup-download-card">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-cloud-download me-2"></i>Descargar Copia de Seguridad</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Genera y descarga un archivo <strong>.tar.gz</strong> con la información actual del sistema
+                        (usuarios, documentos, catálogos, notificaciones y demás datos incluidos en el respaldo completo).
+                    </p>
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info small">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Esta opción funciona igual que antes: el archivo se descarga directamente en su equipo.
+                    </div>
+                    <a href="{{ url_for('exportar_db') }}" class="btn btn-primary" id="btn-download-backup">
+                        <i class="bi bi-download me-1"></i> Descargar respaldo completo (.tar.gz)
+                    </a>
+                </div>
+            </div>
+
+            <!-- 2. Cargar / restaurar respaldo -->
+            <div class="card shadow-sm mb-4" id="backup-upload-card">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Cargar / Restaurar Copia de Seguridad</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>¡ADVERTENCIA!</strong> Al restaurar un respaldo se <strong>sobreescribirán</strong>
+                        los datos actuales. El sistema crea una copia interna previa para poder revertir ante un fallo.
+                    </div>
+
+                    <form action="{{ url_for('importar_db') }}" method="POST" enctype="multipart/form-data" id="importForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-4">
+                            <label for="backup_file" class="form-label fw-bold">Seleccionar archivo de respaldo</label>
+                            <input class="form-control" type="file" id="backup_file" name="backup_file"
+                                accept=".tar.gz,.tgz,.sql,application/gzip,application/sql,text/plain" required>
+                            <div class="form-text">
+                                Se aceptan respaldos completos <strong>.tar.gz</strong> de esta versión y respaldos
+                                anteriores <strong>.sql</strong>. Los archivos SQL antiguos se migran automáticamente
+                                desde la base monolítica hacia los microservicios.
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-warning" id="btn-upload-backup"
+                            data-bs-toggle="modal" data-bs-target="#confirmImportModal">
+                            <i class="bi bi-upload me-1"></i> Cargar y restaurar respaldo
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. Guardado manual directo en Google Drive -->
+            <div class="card shadow-sm mb-4" id="backup-google-drive-manual-card">
+                <div class="card-header bg-info text-dark py-3">
+                    <h5 class="mb-0"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Guardar Manualmente en Google Drive</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Genera un respaldo completo y lo <strong>sube directamente a Google Drive por Internet</strong>.
+                        No utiliza una carpeta del computador y no requiere Google Drive para ordenadores.
+                    </p>
+
+                    {% if not backup_status.oauth_client_configured %}
+                    <div class="alert alert-warning">
+                        <strong>Falta configurar Google Drive API.</strong>
+                        Agregue <code>GOOGLE_DRIVE_CLIENT_ID</code> y <code>GOOGLE_DRIVE_CLIENT_SECRET</code> al archivo <code>.env</code>.
+                        Luego reconstruya <code>backup-service</code>.
+                    </div>
+                    {% elif not backup_status.drive_connected %}
+                    <div class="alert alert-info">
+                        La API ya está configurada, pero todavía debe autorizar la cuenta de Google que recibirá los respaldos.
+                    </div>
+                    <a class="btn btn-outline-primary mb-3" href="{{ url_for('conectar_google_drive') }}" id="btn-connect-google-drive">
+                        <i class="bi bi-google me-2"></i> Conectar mi Google Drive
+                    </a>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <div><strong>Google Drive conectado</strong></div>
+                        {% if backup_status.account_email %}<div class="small">Cuenta: {{ backup_status.account_email }}</div>{% endif %}
+                        <div class="small">Carpeta en la nube: {{ backup_status.folder_path }}</div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <form method="post" action="{{ url_for('respaldo_google_drive_ahora') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-info" type="submit" id="btn-google-drive-manual">
+                                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Subir copia ahora a Google Drive
+                            </button>
+                        </form>
+                        <form method="post" action="{{ url_for('desconectar_google_drive') }}" onsubmit="return confirm('¿Desconectar Google Drive? Los respaldos existentes no se eliminarán.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="bi bi-link-45deg me-1"></i> Desconectar
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 4. Respaldo automático directo en Google Drive -->
+            <div class="card shadow-sm" id="backup-google-drive-auto-card">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Copia Automática Diaria en Google Drive</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        El servidor genera el <code>.tar.gz</code> y lo sube directamente a la cuenta conectada mediante Google Drive API.
+                        Funciona aunque no exista una carpeta de Google Drive en Windows.
+                    </p>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">Estado automático</div>
+                                <div class="fw-bold {% if backup_status.auto_enabled and backup_status.drive_connected %}text-success{% else %}text-secondary{% endif %}">
+                                    {{ 'Activado' if backup_status.auto_enabled else 'Desactivado' }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">Hora diaria</div>
+                                <div class="fw-bold">{{ backup_status.auto_time or '02:00' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">Retención en la nube</div>
+                                <div class="fw-bold">{{ backup_status.retention_days or 30 }} días</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if backup_status.auto_enabled and not backup_status.drive_connected %}
+                    <div class="alert alert-warning">
+                        La copia automática está activada, pero Google Drive no está conectado. Conecte la cuenta para que pueda ejecutarse.
+                    </div>
+                    {% endif %}
+
+                    {% set st = backup_status.status or {} %}
+                    {% set sch = backup_status.scheduler or {} %}
+                    {% if sch.next_run %}
+                    <p class="small mb-3"><strong>Próxima ejecución:</strong> {{ sch.next_run }}</p>
+                    {% endif %}
+
+                    <div class="alert {% if st.state == 'error' %}alert-danger{% elif st.state == 'success' %}alert-success{% else %}alert-secondary{% endif %} mb-3">
+                        <div><strong>Último estado:</strong> {{ st.state or 'Sin ejecuciones todavía' }}</div>
+                        {% if st.last_success %}<div class="small">Última copia correcta: {{ st.last_success }}</div>{% endif %}
+                        {% if st.filename %}<div class="small">Último archivo: {{ st.filename }}</div>{% endif %}
+                        {% if st.drive_web_view_link %}
+                        <div class="small mt-1"><a href="{{ st.drive_web_view_link }}" target="_blank" rel="noopener">Abrir último respaldo en Google Drive</a></div>
+                        {% endif %}
+                        {% if st.error %}<div class="small">Error: {{ st.error }}</div>{% endif %}
+                    </div>
+
+                    <p class="small text-muted mb-0">
+                        Carpeta objetivo: <strong>{{ backup_status.folder_path or 'ARCONEL Respaldos/Actas' }}</strong>.
+                        El token de autorización se guarda en el volumen interno <code>backup_state</code> para que las copias automáticas continúen después de reiniciar Docker.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación Crítica -->
+<div class="modal fade" id="confirmImportModal" tabindex="-1" aria-labelledby="confirmImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmImportModalLabel">
+                    <i class="bi bi-exclamation-diamond me-2"></i>Confirmación Crítica
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4 text-center">
+                <div class="mb-3 text-danger">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                </div>
+                <h4 class="text-danger fw-bold">¿Está absolutamente seguro?</h4>
+                <p class="mb-0">
+                    Esta acción <strong>borrará todos los datos actuales</strong> de la base de datos y los reemplazará
+                    con la información del archivo seleccionado.
+                </p>
+                <p class="text-muted small mt-2">
+                    Antes de modificar los datos, el sistema crea una copia interna de seguridad y revierte
+                    automáticamente ante un fallo.
+                </p>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="document.getElementById('importForm').submit()">
+                    Sí, entiendo los riesgos, importar ahora
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

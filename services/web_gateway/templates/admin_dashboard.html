@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-dashboard-shell">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+      <span class="badge rounded-pill text-bg-primary-subtle text-primary mb-2"><i class="bi bi-bar-chart-line-fill me-2"></i>Solo administradores</span>
+      <h1 class="h2 fw-bold mb-1">Dashboard administrativo</h1>
+      <p class="text-muted mb-0">Resumen general de documentos, usuarios, empresas y notificaciones del sistema.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('descargar_admin_dashboard') }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel-fill me-2"></i>Descargar dashboard
+      </a>
+      <a href="{{ url_for('admin_home') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-gear-fill me-2"></i>Configuración
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100 dashboard-kpi-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div><div class="text-muted small">Documentos totales</div><div class="display-6 fw-bold">{{ total_documents }}</div></div>
+            <span class="dashboard-kpi-icon bg-primary-subtle text-primary"><i class="bi bi-files"></i></span>
+          </div>
+          <div class="small text-muted mt-2">{{ current_year_count }} registrados en {{ current_year }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100 dashboard-kpi-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div><div class="text-muted small">Usuarios activos</div><div class="display-6 fw-bold">{{ active_user_count }}</div></div>
+            <span class="dashboard-kpi-icon bg-success-subtle text-success"><i class="bi bi-people-fill"></i></span>
+          </div>
+          <div class="small text-muted mt-2">{{ user_count }} usuarios totales · {{ admin_count }} administradores</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100 dashboard-kpi-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div><div class="text-muted small">Notificaciones</div><div class="display-6 fw-bold">{{ notification_total }}</div></div>
+            <span class="dashboard-kpi-icon bg-info-subtle text-info"><i class="bi bi-envelope-check-fill"></i></span>
+          </div>
+          <div class="small mt-2 {% if failed_notifications %}text-danger{% else %}text-success{% endif %}">
+            {{ failed_notifications }} fallida(s)
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm h-100 dashboard-kpi-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div><div class="text-muted small">Módulo con más registros</div>
+              {% set top_type = type_distribution | sort(attribute='count', reverse=true) | first %}
+              <div class="h3 fw-bold mb-0">{{ top_type.label if top_type else '—' }}</div>
+            </div>
+            <span class="dashboard-kpi-icon bg-warning-subtle text-warning"><i class="bi bi-trophy-fill"></i></span>
+          </div>
+          <div class="small text-muted mt-2">{{ top_type.count if top_type else 0 }} documento(s)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h2 class="h5 fw-bold mb-1">Documentos por tipo</h2>
+          <p class="small text-muted mb-0">Distribución de todos los registros del sistema.</p>
+        </div>
+        <div class="card-body px-4 pb-4">
+          {% for item in type_distribution %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1"><span class="fw-semibold">{{ item.label }}</span><span>{{ item.count }} <span class="text-muted">({{ item.percent }}%)</span></span></div>
+            <div class="progress dashboard-progress" role="progressbar" aria-label="{{ item.label }}" aria-valuenow="{{ item.percent }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar" style="width: {{ item.percent }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h2 class="h5 fw-bold mb-1">Empresas con más documentos</h2>
+          <p class="small text-muted mb-0">Principales empresas según cantidad de registros.</p>
+        </div>
+        <div class="card-body px-4 pb-4">
+          {% if top_companies %}
+            {% for item in top_companies %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between gap-3 mb-1"><span class="text-truncate fw-semibold" title="{{ item.name }}">{{ item.name }}</span><span class="text-nowrap">{{ item.count }}</span></div>
+              <div class="progress dashboard-progress"><div class="progress-bar" style="width: {{ item.percent }}%"></div></div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-muted text-center py-4">Todavía no existen documentos.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h2 class="h5 fw-bold mb-1">Documentos por funcionario</h2>
+          <p class="small text-muted mb-0">Cantidad total registrada por cada usuario.</p>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead><tr><th class="ps-4">Funcionario</th><th>Rol</th><th>Estado</th><th class="text-end pe-4">Documentos</th></tr></thead>
+              <tbody>
+                {% for item in by_user[:12] %}
+                <tr>
+                  <td class="ps-4"><div class="fw-semibold">{{ item.nombre }}</div><div class="small text-muted">{{ item.email }}</div></td>
+                  <td>{{ item.rol|capitalize }}</td>
+                  <td>{% if item.activo %}<span class="badge text-bg-success-subtle text-success">Activo</span>{% else %}<span class="badge text-bg-secondary-subtle text-secondary">Inactivo</span>{% endif %}</td>
+                  <td class="text-end pe-4 fw-bold">{{ item.documentos }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-4">Sin usuarios registrados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+          <h2 class="h5 fw-bold mb-1">Últimos documentos</h2>
+          <p class="small text-muted mb-0">Los diez registros más recientes de todos los usuarios.</p>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead><tr><th class="ps-4">Código</th><th>Tipo</th><th>Funcionario</th><th class="pe-4">Fecha</th></tr></thead>
+              <tbody>
+                {% for item in recent_documents %}
+                <tr>
+                  <td class="ps-4 fw-semibold">{{ item.code }}</td>
+                  <td>{{ {'actas':'Acta','informes':'Informe','reportes':'Reporte','comisiones':'Comisión'}.get(item.document_type, item.document_type) }}</td>
+                  <td>{{ item.funcionario }}</td>
+                  <td class="pe-4 text-nowrap">{{ item.document_date }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-4">Sin documentos registrados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

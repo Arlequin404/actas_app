@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="create-hub">
+  <section class="create-hub-hero mb-5 fade-in-section">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <span class="badge rounded-pill text-bg-primary-subtle text-primary px-3 py-2 mb-3"><i class="bi bi-plus-circle me-2"></i>Nuevo registro</span>
+        <h1 class="fw-bold mb-2">Seleccione el tipo de documento que desea crear</h1>
+        <p class="lead text-muted mb-0">El sistema abre directamente el formulario correspondiente y le permite trabajar con formularios dinámicos, accesos configurados y subformularios cuando aplique.</p>
+      </div>
+      <div class="col-lg-4">
+        <div class="create-feature-grid">
+          <div class="create-feature-item"><i class="bi bi-lightning-charge"></i><div><strong>Acceso rápido</strong><small>Entre al formulario en un clic.</small></div></div>
+          <div class="create-feature-item"><i class="bi bi-sliders"></i><div><strong>Flexible</strong><small>Compatible con campos dinámicos.</small></div></div>
+          <div class="create-feature-item"><i class="bi bi-diagram-3"></i><div><strong>Escalable</strong><small>Listo para subformularios y opciones.</small></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="row g-4 justify-content-center mb-4">
+    {% set cards = {
+      'actas': ('Actas','Registro de actas y sus datos asociados.','bi-journal-text','primary'),
+      'informes': ('Informes','Informes técnicos, de gestión y casos fortuitos.','bi-file-earmark-text','warning'),
+      'reportes': ('Reportes','Reportes de novedades, alertas y seguimiento.','bi-file-earmark-bar-graph','danger'),
+      'comisiones': ('Comisiones','Registro de comisiones de servicio.','bi-people','success')
+    } %}
+    {% for key, item in cards.items() %}
+    <div class="col-sm-6 col-xl-3 fade-in-section" style="animation-delay: {{ loop.index * 0.05 }}s;">
+      <a href="{{ url_for('crear', doc_type=key) }}" class="create-type-card h-100">
+        <span class="create-type-icon text-{{ item[3] }} bg-{{ item[3] }}-subtle"><i class="bi {{ item[2] }}"></i></span>
+        <span class="create-type-content"><strong>{{ item[0] }}</strong><small>{{ item[1] }}</small></span>
+        <i class="bi bi-arrow-right create-type-arrow"></i>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if shortcuts %}
+  <div class="d-flex align-items-center gap-3 my-4 fade-in-section"><div class="flex-grow-1 border-top"></div><span class="small fw-semibold text-muted text-uppercase">Accesos configurados</span><div class="flex-grow-1 border-top"></div></div>
+  <div class="row g-3 justify-content-center">
+    {% for shortcut in shortcuts %}
+    <div class="col-md-6 col-xl-4 fade-in-section" style="animation-delay: {{ loop.index * 0.04 }}s;">
+      <a href="{{ url_for('crear', doc_type=shortcut.document_type, shortcut=shortcut.id) }}" class="create-shortcut-card h-100">
+        <span class="create-shortcut-icon"><i class="bi {{ shortcut.icon or 'bi-file-earmark-plus' }}"></i></span>
+        <span class="flex-grow-1"><strong>{{ shortcut.label }}</strong><small>{{ shortcut.description or 'Formulario preconfigurado.' }}</small></span>
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if session.get('rol') == 'admin' %}
+  <div class="text-center mt-5 fade-in-section">
+    <a href="{{ url_for('admin_home') }}" class="btn btn-outline-primary btn-lg rounded-pill px-4"><i class="bi bi-gear-fill me-2"></i>Ir a configuración</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

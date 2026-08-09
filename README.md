@@ -1,94 +1,206 @@
-# 📄 Sistema de Gestión de Actas, Informes y Reportes (actas_app)
+> **V7:** el servicio de respaldos usa herramientas PostgreSQL 16, igual que el servidor. Esto corrige el error `unrecognized configuration parameter "transaction_timeout"` durante la restauración.
 
-![Versión](https://img.shields.io/badge/versión-2.1.0-blue.svg)
-![Python](https://img.shields.io/badge/Python-3.12-green.svg)
-![Flask](https://img.shields.io/badge/Flask-3.0.3-lightgrey.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-enabled-blue.svg)
+# ARCONEL — Sistema de Control de Documentos por microservicios
 
-Una solución integral y moderna diseñada para la administración, creación y exportación de documentos técnicos y administrativos. Este sistema optimiza el flujo de trabajo para la generación de **Actas, Informes (incluyendo Casos Fortuitos), Reportes y Comisiones**.
+Versión final consolidada del proyecto. Mantiene actas, informes, reportes y comisiones, pero separa autenticación, documentos, catálogos, notificaciones, respaldos e interfaz.
 
----
+## Servicios
 
-## 🚀 Características Principales
+| Servicio | Base/función |
+|---|---|
+| `web-gateway` | Interfaz, sesiones, CSRF y permisos. |
+| `auth-service` | Usuarios, roles, acceso y recuperación de contraseña (`auth_db`). |
+| `document-service` | CRUD, correlativos y Excel (`documents_db`). |
+| `catalog-service` | Catálogos y diseñador de formularios (`catalog_db`). |
+| `notification-service` | Correos HTML y trazabilidad de envíos (`notifications_db`). |
+| `backup-service` | Copia y restauración de las cuatro bases. |
+| `migration-tool` | Migración opcional desde el monolito. |
 
-### 📁 Gestión de Documentos
-- **Flujo Estandarizado**: Creación intuitiva de documentos con campos personalizados según el tipo.
-- **Numeración Automática e Inteligente**: Generación de correlativos automáticos con capacidad de edición manual en registros existentes.
-- **Sección Especial de Casos Fortuitos**: Campos técnicos específicos para reportes de fallas en alimentadores y líneas de subtransmisión.
-- **Exportación Profesional**: Generación de reportes en formato Excel (.xlsx) con estilos aplicados.
+Solo el gateway publica el puerto `8080`.
 
-### ⚙️ Administración Avanzada
-- **Catálogos Dinámicos**: Gestión de Empresas, Gestiones, Productos y Tipos de Reporte desde la interfaz administrativa, sin necesidad de tocar código.
-- **Control de Usuarios**: Sistema de roles (Admin/Usuario) con gestión de perfiles y seguridad mejorada.
-- **Seguridad en Acciones**: Modales de confirmación para eliminaciones críticas.
+## Primera instalación
 
-### 🛡️ Respaldo y Seguridad
-- **Copia de Seguridad Automatizada**: Sistema de backups diarios de la base de datos PostgreSQL.
-- **Compresión y Retención**: Almacenamiento local comprimido (.sql.gz) con política de rotación de 30 días.
-- **Sincronización en la Nube**: Integración con `rclone` para subir respaldos automáticamente a Google Drive.
-- **Disparador Manual**: Opción para ejecutar respaldos inmediatos desde el panel de administración.
-
----
-
-## 🛠️ Stack Tecnológico
-
-- **Backend**: Python 3.12 + Flask
-- **Base de Datos**: PostgreSQL 16
-- **ORM**: SQLAlchemy
-- **Frontend**: HTML5, CSS3 (Vanilla + Custom Components), JavaScript (ES6+)
-- **Infraestructura**: Docker & Docker Compose
-- **Backups**: Scripts Bash + pg_dump + Rclone
-
----
-
-## 📦 Instalación y Despliegue
-
-### Requisitos Previos
-- Docker y Docker Compose instalados.
-- Archivo `.env` configurado (ver `.env.example`).
-
-### Pasos Rápidos
-1. **Clonar el repositorio**:
-   ```bash
-   git clone <url-del-repositorio>
-   cd actas_app
-   ```
-
-2. **Levantar los servicios**:
-   ```bash
-   docker-compose up -d --build
-   ```
-
-3. **Acceder a la aplicación**:
-   - Web: `http://localhost:8080`
-   - pgAdmin: `http://localhost:5050` (Credenciales en `.env`)
-
----
-
-## 📂 Estructura del Proyecto
-
-```text
-actas_app/
-├── app/               # Código fuente de la aplicación Flask
-│   ├── static/        # Archivos estáticos (CSS, JS, Imágenes)
-│   ├── templates/     # Plantillas Jinja2
-│   ├── models.py      # Definición de modelos SQLAlchemy
-│   └── app.py         # Punto de entrada y rutas
-├── initdb/            # Scripts de inicialización de la DB
-├── backups/           # Directorio local de respaldos (generado automáticamente)
-├── Dockerfile         # Configuración de imagen Docker para el Web
-└── docker-compose.yml # Orquestación de servicios
+```powershell
+python scripts\create_env.py --admin-email "correo@empresa.com"
+docker compose up -d --build
 ```
 
----
+Abra `http://localhost:8080`. La contraseña inicial aparece al ejecutar `create_env.py`.
 
-## ✨ Últimas Actualizaciones
+La longitud mínima es configurable y queda en seis caracteres por compatibilidad:
 
-- ✅ **Sistema de Backups**: Implementación de copias de seguridad automáticas y manuales con subida a la nube.
-- ✅ **Gestión de "Otros"**: Nueva funcionalidad en selectores para permitir entradas manuales si la opción no existe.
-- ✅ **Seguridad UI**: Implementación de modales de confirmación para borrado de usuarios y documentos.
-- ✅ **Flexibilidad en Numeración**: Permiso para modificar el número correlativo al editar documentos existentes.
+```env
+MIN_PASSWORD_LENGTH=6
+```
 
----
-*Desarrollado con ❤️ para la gestión eficiente de información.*
+## Actualizar una instalación que ya tiene datos
+
+1. Haga una copia desde **Administración → Respaldos**.
+2. Copie su `.env` actual a esta carpeta.
+3. Detenga los contenedores sin borrar volúmenes:
+
+```powershell
+docker compose down --remove-orphans
+```
+
+4. Levante la versión final:
+
+```powershell
+docker compose up -d --build --force-recreate
+```
+
+5. Compruebe:
+
+```powershell
+docker compose ps
+docker compose logs --tail=100 auth-service catalog-service document-service notification-service web-gateway
+```
+
+**No use `docker compose down -v`**, porque `-v` elimina PostgreSQL.
+
+## Numeración documental
+
+El formato es:
+
+```text
+PREFIJO.NÚMERO.AÑO
+```
+
+Ejemplos:
+
+```text
+ACTAS.DTCD.001.2026
+INF.DTCD.001.2026
+REP.DTCD.001.2026
+CMS.DTCD.001.2026
+```
+
+El contador se administra por tipo de documento y año. Al iniciar 2027 vuelve automáticamente a `001` para cada tipo. La inicialización también corrige códigos creados por ediciones anteriores con el año en la mitad.
+
+## Roles y usuarios
+
+- `admin`: acceso completo a usuarios, documentos, catálogos, formularios, notificaciones y respaldos.
+- `usuario`: crea, consulta y edita sus propios documentos.
+
+El administrador puede crear, editar, cambiar rol, cambiar contraseña, desactivar y reactivar usuarios. La desactivación conserva documentos e historial. No se puede desactivar al último administrador ni al usuario administrador que está usando la sesión.
+
+Las contraseñas se guardan con hash; nunca en texto plano.
+
+## Formularios dinámicos
+
+Desde **Administración → Diseñador de formularios** se pueden agregar:
+
+- Texto corto y largo.
+- Número.
+- Fecha.
+- Fecha y hora.
+- Correo.
+- Lista desplegable.
+- Opción única.
+- Selección múltiple.
+- Casilla de confirmación.
+- Sí/No.
+- Opción **Otros** con respuesta manual.
+
+La definición se guarda en `catalog_db.form_fields`. Las respuestas se guardan dentro de PostgreSQL en `documents_db.documents.extra_data` de tipo `JSONB`; no son archivos JSON externos.
+
+La clave interna y el tipo quedan bloqueados después de crear un campo. Se puede cambiar la etiqueta, ayuda, obligatoriedad, opciones, orden y visibilidad. Ocultar un campo no elimina respuestas históricas. Crear y editar documentos usan la misma plantilla.
+
+## Correos
+
+El `notification-service` conserva la estructura HTML y registra cada intento como enviado, fallido u omitido. Se generan notificaciones para:
+
+- Creación y actualización de usuarios.
+- Recuperación y cambio de contraseña.
+- Creación, edición y eliminación de documentos.
+- Generación y restauración de respaldos.
+
+Configuración:
+
+```env
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=correo@gmail.com
+SMTP_PASS=CONTRASENA_DE_APLICACION
+SMTP_TLS=true
+SMTP_FROM=ARCONEL <correo@gmail.com>
+EMAIL_NOTIFICATIONS_ENABLED=true
+```
+
+Si SMTP no está configurado, la operación principal continúa y el envío queda como `Omitido` en **Administración → Notificaciones**.
+
+## Copias de seguridad
+
+El archivo `.tar.gz` administrativo contiene:
+
+```text
+manifest.json
+auth_db.dump
+documents_db.dump
+catalog_db.dump
+notifications_db.dump
+```
+
+Por tanto, incluye usuarios, documentos, respuestas JSONB, definición de campos, catálogos y trazabilidad de correos. La restauración se prueba primero en bases temporales. También se aceptan respaldos `v1` anteriores que contienen las tres bases principales.
+
+## Excel
+
+Los campos dinámicos se agregan como columnas. Los valores que podrían interpretarse como fórmulas se neutralizan antes de generar el archivo.
+
+## Validación
+
+```powershell
+python scripts\check_project.py
+```
+
+Valida Python, plantillas Jinja y `docker-compose.yml`.
+
+## pgAdmin opcional
+
+```powershell
+docker compose --profile tools up -d pgadmin
+```
+
+Abra `http://localhost:5050`; el host de PostgreSQL es `db`.
+
+## Editor visual de formularios
+
+Esta versión unifica catálogos, preguntas y subformularios en **Administración → Editor visual de formularios**. Consulte `CONSTRUCTOR_VISUAL.md` y `ACTUALIZACION_CONSTRUCTOR_VISUAL.md`.
+
+## Constructor visual V3
+
+El administrador puede editar todas las respuestas directamente desde la vista del formulario, crear subformularios condicionados para cualquier opción y eliminar elementos de forma segura. La opción especial **Otros** de Empresas se administra en una pantalla independiente. Consulte `MEJORAS_CONSTRUCTOR_VISUAL_V3.md`.
+
+
+## Pruebas automatizadas completas
+
+La versión incluye pruebas unitarias, integración real con PostgreSQL, pruebas de interfaz con Playwright, correos con Mailpit y restauración de respaldos en un volumen aislado.
+
+En Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\test_all.ps1
+```
+
+Consulte `PRUEBAS_COMPLETAS.md` para la matriz y los reportes generados.
+
+## Compatibilidad de respaldos
+
+Las nuevas copias completas se descargan como `.tar.gz` porque la arquitectura utiliza cuatro bases PostgreSQL. Desde la V9, el administrador también puede importar respaldos `.sql` generados por la versión monolítica anterior. Consulte `COMPATIBILIDAD_RESPALDOS_SQL_V9.md`.
+
+## V13: OneDrive y logs
+
+Consulte `RESPALDOS_AUTOMATICOS_ONEDRIVE_Y_LOGS_V13.md` para activar las copias automáticas diarias en una carpeta sincronizada por OneDrive Desktop y usar la nueva pestaña administrativa de Logs y reportes.
+
+
+## V15: Google Drive
+
+La integración de nube fue corregida para Google Drive. Consulte `CORRECCION_GOOGLE_DRIVE_V15.md`.
+
+## Google Drive directo (V16)
+
+La integración de respaldos ya no depende de Google Drive para ordenadores ni de una ruta local. Consulte `GOOGLE_DRIVE_DIRECTO_V16.md` para configurar OAuth 2.0 y subir los `.tar.gz` directamente a la nube mediante Google Drive API.
+
+
+## V17 — Google Drive OAuth PKCE
+Se corrigió la persistencia y reutilización del `code_verifier` durante el callback OAuth de Google Drive.

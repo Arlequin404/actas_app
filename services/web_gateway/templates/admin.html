@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+  <div>
+    <a href="{{ url_for('admin_home') }}" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Centro de administración</a>
+    <h1 class="h2 fw-bold mt-2 mb-1">Usuarios y permisos</h1>
+    <p class="text-muted mb-0">Controle quién puede ingresar y qué acciones puede realizar.</p>
+  </div>
+  <a href="{{ url_for('crear_usuario') }}" class="btn btn-primary"><i class="bi bi-person-plus-fill me-2"></i>Nuevo usuario</a>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-7">
+        <label for="userSearch" class="form-label small fw-semibold">Buscar</label>
+        <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input id="userSearch" class="form-control" placeholder="Nombre o correo electrónico"></div>
+      </div>
+      <div class="col-md-3">
+        <label for="roleFilter" class="form-label small fw-semibold">Rol</label>
+        <select id="roleFilter" class="form-select"><option value="">Todos</option><option value="admin">Administradores</option><option value="usuario">Usuarios</option></select>
+      </div>
+      <div class="col-md-2"><button id="clearFilters" class="btn btn-outline-secondary w-100">Limpiar</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm overflow-hidden">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" id="usersTable">
+      <thead class="table-light"><tr><th class="ps-4">Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Creado</th><th class="text-end pe-4">Acciones</th></tr></thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr data-search="{{ (u.nombre ~ ' ' ~ u.email)|lower }}" data-role="{{ u.rol }}">
+          <td class="ps-4"><div class="d-flex align-items-center gap-3"><div class="avatar-circle bg-primary-subtle text-primary">{{ u.nombre[0]|upper }}</div><div><div class="fw-semibold">{{ u.nombre }}</div><div class="small text-muted">ID {{ u.id }}</div></div></div></td>
+          <td>{{ u.email }}</td>
+          <td>{% if u.rol == 'admin' %}<span class="badge rounded-pill bg-danger-subtle text-danger"><i class="bi bi-shield-lock me-1"></i>Administrador</span>{% else %}<span class="badge rounded-pill bg-info-subtle text-info"><i class="bi bi-person me-1"></i>Usuario</span>{% endif %}</td>
+          <td>{% if u.activo %}<span class="badge rounded-pill bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Activo</span>{% else %}<span class="badge rounded-pill bg-secondary-subtle text-secondary">Inactivo</span>{% endif %}</td>
+          <td class="text-muted small">{{ (u.created_at|string)[:10] }}</td>
+          <td class="text-end pe-4">
+            <a href="{{ url_for('editar_usuario', user_id=u.id) }}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil-square me-1"></i>Editar</a>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick='prepareDeleteModal({{ u.id }}, {{ u.nombre|tojson }})'><i class="bi bi-trash me-1"></i>Desactivar</button>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr id="emptyUsersRow" hidden><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-search fs-2 d-block mb-2"></i>No hay usuarios que coincidan con los filtros.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow">
+    <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Desactivar acceso</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><p>Se desactivará el acceso del usuario <strong id="deleteUserName"></strong>. Sus documentos se conservarán, pero ya no podrá iniciar sesión.</p><div class="alert alert-warning small mb-0">Puede reactivarlo posteriormente desde la opción Editar.</div></div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><form id="confirmDeleteForm" method="post" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger" type="submit">Desactivar usuario</button></form></div>
+  </div></div>
+</div>
+
+<script>
+  const search = document.getElementById('userSearch');
+  const role = document.getElementById('roleFilter');
+  const rows = [...document.querySelectorAll('#usersTable tbody tr[data-search]')];
+  const emptyRow = document.getElementById('emptyUsersRow');
+  function applyFilters() {
+    const q = search.value.trim().toLowerCase();
+    let visible = 0;
+    rows.forEach(row => {
+      const show = row.dataset.search.includes(q) && (!role.value || row.dataset.role === role.value);
+      row.hidden = !show;
+      if (show) visible++;
+    });
+    emptyRow.hidden = visible !== 0;
+  }
+  search.addEventListener('input', applyFilters); role.addEventListener('change', applyFilters);
+  document.getElementById('clearFilters').addEventListener('click', () => { search.value=''; role.value=''; applyFilters(); });
+  function prepareDeleteModal(id, name) {
+    document.getElementById('deleteUserName').textContent = name;
+    document.getElementById('confirmDeleteForm').action = `/admin/usuarios/eliminar/${id}`;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteUserModal')).show();
+  }
+</script>
+{% endblock %}

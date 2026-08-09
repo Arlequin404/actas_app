@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-shell">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <div>
+      <a href="{{ url_for('admin_home') }}" class="small text-decoration-none"><i class="bi bi-arrow-left me-1"></i>Centro de administración</a>
+      <h1 class="h2 fw-bold mt-2 mb-1">Empresas</h1>
+      <p class="text-muted mb-0">Esta lista es general y se utiliza en Actas, Informes, Reportes y Comisiones.</p>
+    </div>
+    <button class="btn btn-primary" id="newCompanyButton"><i class="bi bi-plus-lg me-2"></i>Nueva empresa</button>
+  </div>
+
+  <section class="company-other-card mb-4" id="companyOtherCard">
+    <div class="company-other-icon"><i class="bi bi-pencil-square"></i></div>
+    <div class="flex-grow-1">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <h2 class="h5 fw-bold mb-0">Opción especial “Otros”</h2>
+        <span class="badge text-bg-success" id="companyOtherStatus">Activa</span>
+      </div>
+      <p class="text-muted mb-3">Permite escribir manualmente una empresa que no aparece en la lista. No es una empresa normal, por eso se administra aquí.</p>
+      <div class="row g-3">
+        <div class="col-md-5"><label class="form-label fw-semibold" for="companyOtherLabel">Texto que verá el usuario</label><input class="form-control" id="companyOtherLabel" maxlength="80" value="Otros"></div>
+        <div class="col-md-5"><label class="form-label fw-semibold" for="companyOtherPrompt">Pregunta para escribirla</label><input class="form-control" id="companyOtherPrompt" maxlength="160" value="Especifique la empresa"></div>
+        <div class="col-md-2 d-flex align-items-end"><button class="btn btn-outline-primary w-100" id="saveCompanyOther"><i class="bi bi-save me-1"></i>Guardar</button></div>
+      </div>
+    </div>
+    <div class="form-check form-switch company-other-switch">
+      <input class="form-check-input" type="checkbox" id="companyOtherEnabled" checked>
+      <label class="form-check-label fw-semibold" for="companyOtherEnabled">Mostrar</label>
+    </div>
+  </section>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+      <div class="row g-3 align-items-end mb-4">
+        <div class="col-lg-7">
+          <label class="form-label fw-semibold" for="companySearch">Buscar empresa</label>
+          <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input class="form-control" id="companySearch" placeholder="Escriba parte del nombre"></div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <label class="form-label fw-semibold" for="companyStatus">Estado</label>
+          <select class="form-select" id="companyStatus"><option value="all">Todas</option><option value="active">Visibles</option><option value="inactive">Ocultas</option></select>
+        </div>
+        <div class="col-sm-6 col-lg-2"><button class="btn btn-outline-secondary w-100" id="reloadCompanies"><i class="bi bi-arrow-clockwise me-1"></i>Recargar</button></div>
+      </div>
+
+      <div class="alert alert-light border small d-flex gap-2 align-items-start">
+        <i class="bi bi-shield-check text-primary mt-1"></i>
+        <div><strong>Ocultar</strong> conserva la empresa para documentos anteriores. <strong>Eliminar</strong> la quita de la lista definitivamente, pero los documentos ya guardados conservan el nombre que tenían.</div>
+      </div>
+
+      <div id="companySummary" class="small text-muted mb-3"></div>
+      <div id="companyList" class="company-admin-list"><div class="text-center text-muted py-5"><div class="spinner-border mb-2"></div><div>Cargando empresas…</div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="companyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content border-0 shadow">
+    <div class="modal-header"><div><h5 class="modal-title fw-bold" id="companyModalTitle">Nueva empresa</h5><div class="small text-muted">El código interno se administra automáticamente; solo edite lo que verá el usuario.</div></div><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="companyForm" class="row g-3" novalidate>
+      <input type="hidden" id="companyId">
+      <div class="col-md-8"><label class="form-label fw-semibold" for="companyName">Nombre de la empresa <span class="text-danger">*</span></label><input class="form-control" id="companyName" maxlength="500" required></div>
+      <div class="col-md-4"><label class="form-label fw-semibold" for="companyOrder">Posición</label><input class="form-control" id="companyOrder" type="number" min="0" step="10" value="10"><div class="form-text">Un número menor aparece primero.</div></div>
+      <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="companyActive" checked><label class="form-check-label fw-semibold" for="companyActive">Visible en los formularios</label></div></div>
+    </form></div>
+    <div class="modal-footer justify-content-between"><button class="btn btn-outline-danger" id="deleteCompanyButton" hidden><i class="bi bi-trash3 me-2"></i>Eliminar definitivamente</button><div class="d-flex gap-2 ms-auto"><button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="saveCompanyButton"><i class="bi bi-save me-2"></i>Guardar empresa</button></div></div>
+  </div></div>
+</div>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1090"><div class="toast" id="companyToast" role="status"><div class="toast-header"><i class="bi bi-check-circle-fill text-success me-2" id="companyToastIcon"></i><strong class="me-auto" id="companyToastTitle">Cambios guardados</strong><button type="button" class="btn-close" data-bs-dismiss="toast"></button></div><div class="toast-body" id="companyToastBody"></div></div></div>
+
+<script>
+let companies=[], companyModal, companyToast, companyOther={enabled:true,label:'Otros',prompt:'Especifique la empresa'};
+const csrf=()=>document.querySelector('meta[name="csrf-token"]').content;
+const headers=()=>({'Content-Type':'application/json','X-CSRF-Token':csrf()});
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function apiJson(url,options={}){const response=await fetch(url,options);let data={};try{data=await response.json();}catch(_){data={error:'Respuesta inválida del servidor'};}if(!response.ok){const err=new Error(data.error||'No fue posible completar la operación');err.data=data;err.status=response.status;throw err;}return data;}
+function notify(message,type='success'){document.getElementById('companyToastBody').textContent=message;document.getElementById('companyToastTitle').textContent=type==='danger'?'No se pudo completar':'Cambios guardados';document.getElementById('companyToastIcon').className=`bi ${type==='danger'?'bi-exclamation-triangle-fill text-danger':'bi-check-circle-fill text-success'} me-2`;companyToast.show();}
+async function loadAll(){await Promise.all([loadCompanies(),loadCompanyOther()]);}
+async function loadCompanies(){const list=document.getElementById('companyList');try{const data=await apiJson('/api/catalogos/EMPRESA');companies=data.data||[];renderCompanies();}catch(error){list.innerHTML=`<div class="alert alert-danger">${esc(error.message)}</div>`;}}
+async function loadCompanyOther(){try{const data=await apiJson('/api/configuracion/company_other');companyOther=data.setting_value||companyOther;renderCompanyOther();}catch(error){notify(error.message,'danger');}}
+function renderCompanyOther(){document.getElementById('companyOtherEnabled').checked=companyOther.enabled!==false;document.getElementById('companyOtherLabel').value=companyOther.label||'Otros';document.getElementById('companyOtherPrompt').value=companyOther.prompt||'Especifique la empresa';const status=document.getElementById('companyOtherStatus');status.textContent=companyOther.enabled!==false?'Activa':'Oculta';status.className=`badge ${companyOther.enabled!==false?'text-bg-success':'text-bg-secondary'}`;document.getElementById('companyOtherCard').classList.toggle('is-disabled',companyOther.enabled===false);}
+async function saveCompanyOther(){const payload={enabled:document.getElementById('companyOtherEnabled').checked,label:document.getElementById('companyOtherLabel').value.trim()||'Otros',prompt:document.getElementById('companyOtherPrompt').value.trim()||'Especifique la empresa'};try{const data=await apiJson('/api/configuracion/company_other',{method:'PUT',headers:headers(),body:JSON.stringify(payload)});companyOther=data.setting_value||payload;renderCompanyOther();notify('La opción “Otros” se actualizó en los cuatro formularios.');}catch(error){notify(error.message,'danger');}}
+function filteredCompanies(){const q=document.getElementById('companySearch').value.trim().toLowerCase();const status=document.getElementById('companyStatus').value;return companies.filter(item=>(!q||item.nombre.toLowerCase().includes(q))&&(status==='all'||(status==='active'&&item.activo)||(status==='inactive'&&!item.activo))).sort((a,b)=>(a.orden||0)-(b.orden||0)||a.nombre.localeCompare(b.nombre));}
+function renderCompanies(){const visible=companies.filter(x=>x.activo).length;document.getElementById('companySummary').textContent=`${companies.length} empresa(s) registradas · ${visible} visibles · ${companies.length-visible} ocultas`;const items=filteredCompanies();const list=document.getElementById('companyList');if(!items.length){list.innerHTML='<div class="text-center text-muted py-5"><i class="bi bi-building-slash display-5"></i><p class="mt-2">No se encontraron empresas.</p></div>';return;}list.innerHTML=items.map(item=>`<article class="company-admin-item ${item.activo?'':'is-inactive'}"><div class="company-admin-order">${item.orden??'—'}</div><div class="flex-grow-1"><strong>${esc(item.nombre)}</strong><small>${item.activo?'Visible en todos los formularios':'Oculta para registros nuevos'}</small></div><div class="company-admin-actions"><button class="btn btn-sm btn-outline-primary" data-edit-company="${item.id}"><i class="bi bi-pencil-square me-1"></i>Editar</button>${item.activo?`<button class="btn btn-sm btn-outline-secondary" data-hide-company="${item.id}"><i class="bi bi-eye-slash me-1"></i>Ocultar</button>`:`<button class="btn btn-sm btn-outline-success" data-restore-company="${item.id}"><i class="bi bi-eye me-1"></i>Restaurar</button>`}<button class="btn btn-sm btn-outline-danger" data-delete-company="${item.id}"><i class="bi bi-trash3 me-1"></i>Eliminar</button></div></article>`).join('');list.querySelectorAll('[data-edit-company]').forEach(btn=>btn.onclick=()=>openCompany(companies.find(x=>x.id===Number(btn.dataset.editCompany))));list.querySelectorAll('[data-hide-company]').forEach(btn=>btn.onclick=()=>setCompanyActive(Number(btn.dataset.hideCompany),false));list.querySelectorAll('[data-restore-company]').forEach(btn=>btn.onclick=()=>setCompanyActive(Number(btn.dataset.restoreCompany),true));list.querySelectorAll('[data-delete-company]').forEach(btn=>btn.onclick=()=>deleteCompany(Number(btn.dataset.deleteCompany)));}
+function openCompany(item=null){document.getElementById('companyModalTitle').textContent=item?'Editar empresa':'Nueva empresa';document.getElementById('companyId').value=item?.id||'';document.getElementById('companyName').value=item?.nombre||'';document.getElementById('companyOrder').value=item?.orden??((companies.length+1)*10);document.getElementById('companyActive').checked=item?.activo??true;document.getElementById('deleteCompanyButton').hidden=!item;companyModal.show();setTimeout(()=>document.getElementById('companyName').focus(),250);}
+async function saveCompany(){const id=Number(document.getElementById('companyId').value)||null;const name=document.getElementById('companyName').value.trim();if(!name){notify('Escriba el nombre de la empresa.','danger');return;}const payload={categoria:'EMPRESA',nombre:name,padre_id:null,orden:Number(document.getElementById('companyOrder').value)||0,activo:document.getElementById('companyActive').checked,meta_data:null};try{await apiJson(id?`/api/catalogos/${id}`:'/api/catalogos',{method:id?'PUT':'POST',headers:headers(),body:JSON.stringify(payload)});companyModal.hide();await loadCompanies();notify(id?'Empresa actualizada.':'Empresa creada y disponible en los cuatro formularios.');}catch(error){notify(error.message,'danger');}}
+async function setCompanyActive(id,active){const item=companies.find(x=>x.id===id);if(!item)return;if(!active&&!confirm(`Se ocultará “${item.nombre}” para registros nuevos. Los documentos anteriores no cambiarán.`))return;const payload={categoria:'EMPRESA',nombre:item.nombre,padre_id:null,orden:item.orden||0,activo:active,meta_data:item.meta_data||null};try{await apiJson(`/api/catalogos/${id}`,{method:'PUT',headers:headers(),body:JSON.stringify(payload)});await loadCompanies();notify(active?'Empresa restaurada.':'Empresa ocultada sin borrar el historial.');}catch(error){notify(error.message,'danger');}}
+async function deleteCompany(id){const item=companies.find(x=>x.id===id);if(!item)return;const accepted=confirm(`¿Eliminar definitivamente “${item.nombre}” de la lista?\n\nLos documentos anteriores conservarán el nombre guardado, pero esta empresa ya no podrá seleccionarse en registros nuevos.`);if(!accepted)return;try{await apiJson(`/api/catalogos/${id}/eliminar`,{method:'DELETE',headers:headers()});companyModal.hide();await loadCompanies();notify('Empresa eliminada de la lista. Los documentos históricos se conservaron.');}catch(error){if(error.status===409||error.requires_cascade){const cascade=confirm(`${error.message}\n\n¿Desea eliminar también los subformularios o reglas vinculados a esta empresa? Las respuestas de documentos anteriores permanecerán guardadas.`);if(!cascade)return;try{await apiJson(`/api/catalogos/${id}/eliminar?cascade=1`,{method:'DELETE',headers:headers()});companyModal.hide();await loadCompanies();notify('Empresa y configuración vinculada eliminadas. Los documentos históricos se conservaron.');return;}catch(cascadeError){notify(cascadeError.message,'danger');return;}}notify(error.message,'danger');}}
+document.addEventListener('DOMContentLoaded',()=>{companyModal=bootstrap.Modal.getOrCreateInstance('#companyModal');companyToast=bootstrap.Toast.getOrCreateInstance('#companyToast');document.getElementById('newCompanyButton').onclick=()=>openCompany();document.getElementById('saveCompanyButton').onclick=saveCompany;document.getElementById('deleteCompanyButton').onclick=()=>deleteCompany(Number(document.getElementById('companyId').value));document.getElementById('saveCompanyOther').onclick=saveCompanyOther;document.getElementById('companyOtherEnabled').onchange=renderCompanyOther;document.getElementById('companySearch').oninput=renderCompanies;document.getElementById('companyStatus').onchange=renderCompanies;document.getElementById('reloadCompanies').onclick=loadAll;loadAll();});
+</script>
+{% endblock %}
